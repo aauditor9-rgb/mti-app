@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body { background:#15171C; font-family:'DM Sans','Helvetica Neue',Arial,sans-serif; }
+    * { box-sizing:border-box; }
+    a { color:#E0866A; text-decoration:none; }
+    a:hover { color:#C2603C; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:radial-gradient(120% 80% at 50% 0%, #22242C 0%, #15171C 60%); color:#FFFFFF; padding:44px 32px 72px;">
+  <div style="max-width:1180px; margin:0 auto;">
+
+    <div style="text-align:center; margin-bottom:34px;">
+      <div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="width:34px; height:34px; border-radius:10px; background:linear-gradient(150deg,#C2603C,#9d4a2c); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600;">M</span>
+        <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em;">Madad</span>
+        <span style="font-size:12px; color:#8b91a3; border-left:1px solid #3A3E4B; padding-left:11px;">Madrassa Talimul Islam</span>
+      </div>
+      <h1 style="font-size:34px; font-weight:700; letter-spacing:-0.03em; margin:0 0 10px; line-height:1.1;">The whole portal, in a pocket</h1>
+      <p style="font-size:14.5px; color:#9aa0b0; line-height:1.6; max-width:600px; margin:0 auto; text-wrap:pretty;">The desktop portal, screen for screen, on the phone — Parent, Teacher, Office and Murabbī, with the pupil's own app inside the parent's. iOS on the left, Android on the right, both live.</p>
+    </div>
+
+    <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+      <sc-for list="{{ roleTabs }}" as="r" hint-placeholder-count="5">
+        <button onClick="{{ r.onClick }}" style="{{ r.style }}">{{ r.label }}</button>
+      </sc-for>
+    </div>
+    <div style="text-align:center; font-size:13px; color:#8b91a3; margin-bottom:30px; min-height:20px;">{{ roleNote }}</div>
+
+    <div style="display:flex; gap:56px; justify-content:center; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:#8b91a3;">iOS</span>
+        <dc-import name="MadadPhone" role="{{ role }}" platform="ios" hint-size="410,864"></dc-import>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:#8b91a3;">Android</span>
+        <dc-import name="MadadPhone" role="{{ role }}" platform="android" hint-size="410,864"></dc-import>
+      </div>
+    </div>
+
+    <div style="max-width:900px; margin:56px auto 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px;">
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="4">
+        <div style="background:#1D2027; border:1px solid #2E323C; border-radius:16px; padding:18px;">
+          <div style="font-size:14px; font-weight:600; color:#FFFFFF; margin-bottom:6px;">{{ n.title }}</div>
+          <div style="font-size:12.5px; color:#9aa0b0; line-height:1.55;">{{ n.body }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1200}}">
+const ROLES = [
+  ["parent", "Parent", "Ruhiya Azmeen — Home · Attendance · Fees · Messages · More. Switch to \u201cAyyub’s view\u201d on Home for the pupil’s own app."],
+  ["teacher", "Teacher", "Apa Samia, form tutor for Year 1a — Check-in, then the form register. No admin screens, matching the desktop teacher portal."],
+  ["office", "Office / Admin", "Every desktop section is here — More opens the same six groups as the portal sidebar, with each screen’s hub sub-tabs across the top."],
+  ["murabbi", "Murabbī", "Ml Ikram — mureeds, weekly muḥāsabah reports, prescribed aẓkār and mentoring sessions. Allocated per pupil, as on desktop."],
+];
+
+const NOTES = [
+  ["Face ID and fingerprint", "Both phones open locked. iOS asks for Face ID, Android for a fingerprint — tap the ring to sign in."],
+  ["Teacher signs in first", "The teacher app opens on Check-in. One register a day, for the form class in lesson 1 — and it stays locked until Apa Samia signs in."],
+  ["Pupil view inside the parent app", "On the parent's Home, the Parent / Ayyub's view switch drops into the pupil's own app — timetable, homework, quiz and Ihsan Points, with fees and admin hidden."],
+  ["Native per platform", "iOS uses large titles, pill tabs and a home indicator. Android uses a single-line app bar, pill-highlighted tab icons and Material shapes."],
+  ["Full portal parity", "Every section of the desktop portal exists in the app. More is the sidebar: the same groups in the same order, and hub sub-tabs across the top for Office and Parent. Maktab only — the ʿĀlimiyyah programme stays on desktop."],
+];
+
+class Component extends DCLogic {
+  state = { role: "parent" };
+
+  renderVals() {
+    const s = this.state;
+    const active = ROLES.find(r => r[0] === s.role) || ROLES[0];
+    return {
+      role: s.role,
+      roleNote: active[2],
+      roleTabs: ROLES.map(r => {
+        const on = r[0] === s.role;
+        return {
+          label: r[1],
+          style: `font-family:inherit; font-size:13.5px; font-weight:${on ? 600 : 500}; padding:10px 18px; border-radius:999px; cursor:pointer; border:1px solid ${on ? "#C2603C" : "#333844"}; background:${on ? "#C2603C" : "#1D2027"}; color:${on ? "#FFFFFF" : "#9aa0b0"}; transition:border-color .15s ease;`,
+          onClick: () => this.setState({ role: r[0] }),
+        };
+      }),
+      notes: NOTES.map(n => ({ title: n[0], body: n[1] })),
+    };
+  }
+}
+</script>
+</body>
+</html>

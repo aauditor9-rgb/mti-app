@@ -1,0 +1,8 @@
+-- Row-Level Security policies, one per tenant-owned table.
+-- See TECH_STACK.md "Multi-tenancy" for the pattern:
+--
+-- alter table pupil enable row level security;
+-- create policy tenant_isolation on pupil
+--   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+--
+-- Left empty until Stage 5 (connect the database).

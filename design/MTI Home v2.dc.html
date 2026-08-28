@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #F2EDE3; }
+  a { color: #B4552C; text-decoration: none; }
+  a:hover { color: #8A3C1B; }
+  ::selection { background: #E4D6BC; }
+  @keyframes v2cue { 0%,100% { transform: translateY(0); opacity: .45; } 50% { transform: translateY(6px); opacity: 1; } }
+</style>
+<script type="module">
+  (async () => {
+    try {
+      const T = await import("https://unpkg.com/three@0.160.0/build/three.module.js");
+      const star = (n, ro, ri, rot) => {
+        const s = new T.Shape();
+        for (let i = 0; i < n * 2; i++) {
+          const ang = (rot || 0) + i * Math.PI / n, r = i % 2 ? ri : ro;
+          const x = Math.cos(ang) * r, y = Math.sin(ang) * r;
+          i ? s.lineTo(x, y) : s.moveTo(x, y);
+        }
+        s.closePath(); return s;
+      };
+      const kite = (w, h) => {
+        const s = new T.Shape();
+        s.moveTo(0, h); s.lineTo(w, 0); s.lineTo(0, -h); s.lineTo(-w, 0); s.closePath(); return s;
+      };
+      const poly = (n, r, rot) => {
+        const s = new T.Shape();
+        for (let i = 0; i < n; i++) {
+          const ang = (rot || 0) + i * 2 * Math.PI / n;
+          const x = Math.cos(ang) * r, y = Math.sin(ang) * r;
+          i ? s.lineTo(x, y) : s.moveTo(x, y);
+        }
+        s.closePath(); return s;
+      };
+      window.V2HERO = function (canvas) {
+        const ren = new T.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const scene = new T.Scene();
+        const cam = new T.PerspectiveCamera(36, 1, 0.1, 100);
+        cam.position.set(0, 0, 9);
+        scene.add(new T.HemisphereLight(0xFFF7E8, 0x6A5C46, 1.45));
+        const key = new T.DirectionalLight(0xFFFFFF, 2); key.position.set(3.5, 5.5, 7); scene.add(key);
+        const rim = new T.DirectionalLight(0xD08A52, 0.75); rim.position.set(-6, -2.5, 2.5); scene.add(rim);
+        const mat = (h) => new T.MeshStandardMaterial({ color: h, roughness: 0.7, metalness: 0.05, flatShading: true });
+        const clay = mat(0xB4552C), brass = mat(0xA07F2C), olive = mat(0x5E6E45), bone = mat(0xEADFC6), ink = mat(0x2A231C);
+        const ex = (sh, d, m) => {
+          const g = new T.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 1 });
+          g.center(); return new T.Mesh(g, m);
+        };
+        const grp = new T.Group(), rings = [];
+        const core = ex(star(12, 1.02, 0.5), 0.32, clay); grp.add(core);
+        const collar = ex(poly(12, 1.44, Math.PI / 12), 0.13, bone); collar.position.z = -0.15; grp.add(collar);
+        const r1 = new T.Group();
+        for (let i = 0; i < 12; i++) {
+          const m = ex(kite(0.42, 0.76), 0.19, i % 2 ? brass : ink);
+          const ang = i * 2 * Math.PI / 12;
+          m.position.set(Math.cos(ang) * 2.08, Math.sin(ang) * 2.08, 0); m.rotation.z = ang; r1.add(m);
+        }
+        grp.add(r1); rings.push(r1);
+        const r2 = new T.Group();
+        for (let i = 0; i < 24; i++) {
+          const m = ex(poly(6, 0.38, Math.PI / 6), 0.15, i % 3 === 0 ? clay : i % 3 === 1 ? olive : bone);
+          const ang = (i + 0.5) * 2 * Math.PI / 24;
+          m.position.set(Math.cos(ang) * 3.1, Math.sin(ang) * 3.1, 0); m.rotation.z = ang; r2.add(m);
+        }
+        grp.add(r2); rings.push(r2);
+        const r3 = new T.Group();
+        for (let i = 0; i < 36; i++) {
+          const m = ex(poly(3, 0.27, Math.PI / 2), 0.09, i % 2 ? bone : brass);
+          const ang = i * 2 * Math.PI / 36;
+          m.position.set(Math.cos(ang) * 3.86, Math.sin(ang) * 3.86, 0); m.rotation.z = ang + Math.PI / 2; r3.add(m);
+        }
+        grp.add(r3); rings.push(r3);
+        grp.rotation.x = -0.3;
+        scene.add(grp);
+        const st = { p: 0, dx: 0, dy: 0, vx: 0, vy: 0, down: false, lx: 0, ly: 0, t: 0 };
+        const fit = () => {
+          const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+          ren.setSize(w, h, false);
+          cam.aspect = w / h; cam.updateProjectionMatrix();
+          cam.position.z = w < 900 ? 11.8 : 8.6;
+        };
+        window.addEventListener("resize", fit);
+        canvas.style.cursor = "grab";
+        canvas.addEventListener("pointerdown", (e) => { st.down = true; st.lx = e.clientX; st.ly = e.clientY; canvas.style.cursor = "grabbing"; });
+        window.addEventListener("pointermove", (e) => {
+          if (!st.down) return;
+          st.vx += (e.clientX - st.lx) * 0.005; st.vy += (e.clientY - st.ly) * 0.004;
+          st.lx = e.clientX; st.ly = e.clientY;
+        });
+        window.addEventListener("pointerup", () => { st.down = false; canvas.style.cursor = "grab"; });
+        const loop = () => {
+          st.t += 0.006;
+          st.dx += st.vx; st.dy += st.vy; st.vx *= 0.9; st.vy *= 0.9;
+          st.dy = Math.max(-0.65, Math.min(0.65, st.dy));
+          const p = st.p;
+          grp.rotation.y = st.t * 0.38 + p * Math.PI * 1.1 + st.dx;
+          grp.rotation.x = -0.3 + Math.sin(st.t * 0.65) * 0.045 - st.dy + p * 0.45;
+          grp.position.y = p * -1;
+          grp.scale.setScalar((canvas.clientWidth < 1100 ? 0.9 : 1) * (1 - p * 0.16));
+          core.rotation.z = -st.t * 0.55;
+          collar.rotation.z = st.t * 0.3;
+          rings.forEach((r, i) => {
+            r.rotation.z = st.t * (i % 2 ? 0.2 : -0.15) * (i + 1) * 0.6;
+            r.position.z = Math.sin(st.t * 0.85 + i) * 0.11 + p * (i + 1) * 0.85;
+            r.children.forEach((m, j) => { m.rotation.y = p * Math.PI * (0.55 + i * 0.32) + Math.sin(st.t + j * 0.4) * 0.11; });
+          });
+          ren.render(scene, cam);
+          requestAnimationFrame(loop);
+        };
+        fit(); loop();
+        return { setScroll: (v) => { st.p = v; } };
+      };
+      window.dispatchEvent(new Event("v2ready"));
+    } catch (e) { window.V2HERO = null; }
+  })();
+</script>
+</helmet>
+
+<div ref="{{ rootRef }}" style="background:#F2EDE3; color:#1E1913; font-family:'Inter Tight','Helvetica Neue',Arial,sans-serif; overflow-x:hidden; -webkit-font-smoothing:antialiased;">
+
+  <div style="position:fixed; top:0; left:0; right:0; z-index:40; background:rgba(242,237,227,0.9); backdrop-filter:blur(8px);">
+    <div style="max-width:1320px; margin:0 auto; padding:18px 32px; display:flex; align-items:center; gap:32px;">
+      <a href="#top" style="display:flex; align-items:baseline; gap:10px; color:#1E1913;">
+        <span style="font-family:'Instrument Serif',Georgia,serif; font-size:23px; letter-spacing:-0.02em;">Madad</span>
+        <span style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.2em; text-transform:uppercase; color:#8C8172;">Maktab OS</span>
+      </a>
+      <div style="display:flex; gap:28px; margin-left:auto; font-size:13.5px; font-weight:500;">
+        <a href="#problem" style="color:#5C5347;">Why</a>
+        <a href="#roles" style="color:#5C5347;">Roles</a>
+        <a href="#tour" style="color:#5C5347;">Product</a>
+        <a href="#hifz" style="color:#5C5347;">Ḥifẓ</a>
+        <a href="#pricing" style="color:#5C5347;">Pricing</a>
+      </div>
+      <a href="#demo" style="font-size:13.5px; font-weight:600; background:#1E1913; color:#F2EDE3; padding:11px 20px; border-radius:999px;" style-hover="background:#B4552C;">Book a demo</a>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div id="top" style="padding:132px 32px 0;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:56px; align-items:center; min-height:min(720px,78vh);">
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:#9A7327; margin-bottom:30px;">Madrasah software · Tarbiyyah first</div>
+          <h1 style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(52px,6.6vw,104px); line-height:0.92; font-weight:400; letter-spacing:-0.03em; margin:0 0 28px;">One system for the <em style="font-style:italic; color:#B4552C;">whole maktab.</em></h1>
+          <p style="font-size:clamp(17px,1.28vw,20px); line-height:1.6; color:#4C4438; max-width:452px; margin:0 0 36px; text-wrap:pretty;">Registers, fees, ḥifẓ, homework and character held as one record — shown to the office, the teacher, the parent and the pupil in the form each of them needs.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:11px; align-items:center;">
+            <a href="#demo" style="font-size:14px; font-weight:600; background:#B4552C; color:#FFF7EC; padding:15px 26px; border-radius:999px;" style-hover="background:#8A3C1B;">Book a demo</a>
+            <a href="#tour" style="font-size:14px; font-weight:600; color:#1E1913; padding:15px 22px; border-radius:999px; border:1px solid #D3C6AC;" style-hover="background:#1E1913; color:#F2EDE3;">See it working</a>
+            <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9A9184; margin-left:6px;">Drag the form ↻</span>
+          </div>
+        </div>
+        <div data-anim="hero" style="position:relative; height:min(600px,68vh);">
+          <div style="position:absolute; top:50%; left:50%; width:min(38vw,470px); height:min(38vw,470px); transform:translate(-50%,-50%); border:1px solid #DFD3B9; border-radius:50%;"></div>
+          <canvas data-el="canvas" style="position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none;"></canvas>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap; padding:30px 0 36px; border-top:1px solid #E0D5BF; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9A9184;">
+        <span style="color:#1E1913;">Built for</span>
+        <span>Evening maktabs</span><span>·</span>
+        <span>Weekend madrasahs</span><span>·</span>
+        <span>Ḥifẓ programmes</span><span>·</span>
+        <span>ʿĀlimiyyah institutes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <div id="problem" style="padding:104px 32px;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:start;">
+        <div>
+          <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">01 — What it replaces</div>
+          <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0 0 26px;">Eleven books and a WhatsApp group.</h2>
+          <p data-anim="up" style="font-size:18.5px; line-height:1.62; color:#4C4438; max-width:470px; margin:0 0 16px; text-wrap:pretty;">Paper registers in a drawer. A fee ledger the treasurer keeps at home. Term dates pinned to the office wall. Homework told at the door. Ḥifẓ noted in a jotter that goes home and doesn't come back.</p>
+          <p data-anim="up" style="font-size:18.5px; line-height:1.62; color:#1E1913; max-width:470px; margin:0; text-wrap:pretty;">Every record kept separately, so nobody ever sees the child whole.</p>
+        </div>
+        <div data-anim="sheets" style="perspective:1500px; height:520px; position:relative;">
+          <div data-el="stack" style="position:absolute; inset:0; transform-style:preserve-3d;">
+            <sc-for list="{{ sheets }}" as="s" hint-placeholder-count="5">
+              <div data-sheet="{{ s.i }}" style="{{ s.style }}">
+                <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.15em; text-transform:uppercase; color:{{ s.kickFg }};">{{ s.kicker }}</div>
+                <div style="font-family:'Instrument Serif',Georgia,serif; font-size:{{ s.size }}; line-height:1.2; letter-spacing:-0.01em; margin-top:12px; color:{{ s.fg }};">{{ s.body }}</div>
+                <div style="font-size:13.5px; color:{{ s.subFg }}; margin-top:9px; line-height:1.45;">{{ s.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROLES -->
+  <div id="roles" style="padding:104px 32px 116px; background:#EAE2D0;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:44px; flex-wrap:wrap; margin-bottom:52px;">
+        <div>
+          <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">02 — Five roles, one record</div>
+          <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0; max-width:620px;">The same truth, put five different ways.</h2>
+        </div>
+        <p data-anim="up" style="font-size:17px; line-height:1.62; color:#4C4438; max-width:330px; margin:0; text-wrap:pretty;">One record underneath. Five interfaces on top, each showing only what that person can act on.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:14px;">
+        <sc-for list="{{ roles }}" as="r" hint-placeholder-count="5">
+          <div data-anim="up" style="background:#FBF7EE; border:1px solid #DDD1B9; border-radius:20px; padding:24px 22px 26px;">
+            <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; color:#9A7327;">{{ r.num }}</div>
+            <div style="font-family:'Instrument Serif',Georgia,serif; font-size:30px; letter-spacing:-0.02em; margin:11px 0 6px;">{{ r.name }}</div>
+            <div style="font-size:14.5px; color:#5C5347; line-height:1.5; min-height:44px;">{{ r.blurb }}</div>
+            <div style="height:1px; background:#E2D7C0; margin:18px 0 15px;"></div>
+            <div style="display:flex; flex-direction:column; gap:11px;">
+              <sc-for list="{{ r.does }}" as="d" hint-placeholder-count="3">
+                <div style="display:flex; gap:9px; font-size:14.5px; line-height:1.45; color:#1E1913;"><span style="color:#B4552C;">→</span><span>{{ d }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOUR -->
+  <div id="tour" style="padding:104px 32px 116px;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">03 — The product</div>
+      <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0 0 14px; max-width:700px;">Portal on the desk. The same screen in a pocket.</h2>
+      <p data-anim="up" style="font-size:17px; line-height:1.62; color:#4C4438; max-width:480px; margin:0 0 48px;">Keep scrolling — the screens move with you.</p>
+      <div data-anim="tour" style="display:grid; grid-template-columns:236px 1fr; gap:52px; align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <sc-for list="{{ stops }}" as="t" hint-placeholder-count="3">
+            <div data-stop="{{ t.i }}" style="padding:18px 0 18px 16px; border-left:2px solid transparent;">
+              <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#9A7327;">{{ t.num }}</div>
+              <div style="font-family:'Instrument Serif',Georgia,serif; font-size:23px; letter-spacing:-0.02em; margin:6px 0 5px;">{{ t.title }}</div>
+              <div style="font-size:14.5px; line-height:1.55; color:#5C5347;">{{ t.body }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:relative; height:560px; background:#FBF7EE; border:1px solid #DDD1B9; border-radius:24px; overflow:hidden;">
+          <div style="display:flex; align-items:center; gap:9px; padding:15px 20px; border-bottom:1px solid #E2D7C0;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#D3C6AC;"></span>
+            <span style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.15em; text-transform:uppercase; color:#9A9184;">Madad · Office</span>
+          </div>
+          <div style="position:relative; height:calc(100% - 46px);">
+            <sc-for list="{{ screens }}" as="sc" hint-placeholder-count="3">
+              <div data-screen="{{ sc.i }}" style="{{ sc.wrapStyle }}">
+                <div style="font-family:'Instrument Serif',Georgia,serif; font-size:31px; letter-spacing:-0.02em;">{{ sc.title }}</div>
+                <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#9A9184; margin:7px 0 22px;">{{ sc.meta }}</div>
+                <sc-for list="{{ sc.rows }}" as="r" hint-placeholder-count="5">
+                  <div style="display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid #EDE3CE;">
+                    <span style="flex:1; font-size:16px;">{{ r.label }}</span>
+                    <span style="font-size:14px; color:#5C5347;">{{ r.detail }}</span>
+                    <span style="{{ r.pill }}">{{ r.tag }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARBIYYAH -->
+  <div style="padding:112px 32px; background:#1E1913; color:#F2EDE3;">
+    <div style="max-width:1320px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;">
+      <div>
+        <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#CF9F45; margin-bottom:24px;">04 — Tarbiyyah first</div>
+        <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0 0 26px;">Points for character, not house colours.</h2>
+        <p data-anim="up" style="font-size:18.5px; line-height:1.62; color:#CBBFA8; max-width:470px; margin:0 0 16px; text-wrap:pretty;">Iḥsān Points are awarded against the adab you actually teach — truthfulness, wuḍūʾ kept, a younger pupil helped, ṣalāh prayed without being asked. Not for winning.</p>
+        <p data-anim="up" style="font-size:18.5px; line-height:1.62; color:#F2EDE3; max-width:470px; margin:0; text-wrap:pretty;">The parent sees the reason, not just the number. That is the whole point.</p>
+      </div>
+      <div style="display:flex; flex-direction:column;">
+        <sc-for list="{{ ledger }}" as="l" hint-placeholder-count="5">
+          <div data-anim="up" style="display:flex; align-items:baseline; gap:20px; padding:19px 0; border-top:1px solid #3B332A;">
+            <span style="font-family:'DM Mono',monospace; font-size:18px; color:#CF9F45; width:42px;">+{{ l.pts }}</span>
+            <span style="flex:1;">
+              <span style="display:block; font-size:19px; letter-spacing:-0.01em;">{{ l.reason }}</span>
+              <span style="display:block; font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#8C8172; margin-top:6px;">{{ l.who }}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUMBERS -->
+  <div style="padding:104px 32px;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">05 — Attendance &amp; fees</div>
+      <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0 0 52px; max-width:700px;">The two things that go wrong quietly.</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <sc-for list="{{ panels }}" as="p" hint-placeholder-count="2">
+          <div data-anim="up" style="background:#FBF7EE; border:1px solid #DDD1B9; border-radius:24px; padding:34px 34px 36px;">
+            <div style="font-family:'DM Mono',monospace; font-size:clamp(46px,5.4vw,80px); letter-spacing:-0.05em; line-height:1; color:{{ p.fg }};">{{ p.figure }}</div>
+            <div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9A7327; margin:14px 0 18px;">{{ p.label }}</div>
+            <p style="font-size:17px; line-height:1.6; color:#4C4438; margin:0 0 24px; text-wrap:pretty;">{{ p.body }}</p>
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ p.rows }}" as="r" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid #EDE3CE;">
+                  <span style="flex:1; font-size:15.5px;">{{ r.name }}</span>
+                  <span style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:{{ r.fg }};">{{ r.tag }}</span>
+                  <span style="font-family:'DM Mono',monospace; font-size:14px; width:52px; text-align:right;">{{ r.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIFZ -->
+  <div id="hifz" data-anim="hifz" style="padding:104px 32px 116px; background:#EAE2D0;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:end; margin-bottom:52px;">
+        <div>
+          <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">06 — The ḥifẓ journey</div>
+          <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0;">Thirty juz, one line at a time.</h2>
+        </div>
+        <p data-anim="up" style="font-size:17px; line-height:1.62; color:#4C4438; margin:0; text-wrap:pretty;">Sabaq, sabqī and manzil recorded as each is heard, with the grade in plain words. Ḥifẓ runs to its own calendar — through half-terms, with a Saturday sitting — and Madad keeps that separate from maktab.</p>
+      </div>
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+        <div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9A9184;">Ayyub Ahmad · Juz 1 → 30</div>
+        <div data-el="juzcount" style="font-family:'DM Mono',monospace; font-size:14px; color:#1E1913;">Juz 0 of 30</div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(30,1fr); gap:4px; margin-bottom:36px;">
+        <sc-for list="{{ juz }}" as="j" hint-placeholder-count="30">
+          <div data-juz="{{ j.i }}" style="height:54px; border-radius:6px; background:#FBF7EE; border:1px solid #DDD1B9; display:flex; align-items:flex-end; justify-content:center; padding-bottom:5px; font-family:'DM Mono',monospace; font-size:9px; color:#9A9184;">{{ j.n }}</div>
+        </sc-for>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;">
+        <sc-for list="{{ hifzNotes }}" as="h" hint-placeholder-count="3">
+          <div data-anim="up" style="background:#FBF7EE; border:1px solid #DDD1B9; border-radius:20px; padding:24px 22px 26px;">
+            <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#9A7327;">{{ h.kind }}</div>
+            <div style="font-family:'Instrument Serif',Georgia,serif; font-size:23px; letter-spacing:-0.02em; margin:10px 0 7px;">{{ h.passage }}</div>
+            <div style="font-size:14.5px; color:#5C5347; line-height:1.5;">{{ h.grade }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOICES -->
+  <div style="padding:104px 32px;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">07 — Who it's for</div>
+      <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0 0 48px; max-width:760px;">Evening maktabs, weekend madrasahs and ḥifẓ classes.</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
+        <sc-for list="{{ quotes }}" as="q" hint-placeholder-count="3">
+          <div data-anim="up" style="background:#FBF7EE; border:1px solid #DDD1B9; border-radius:24px; padding:30px 28px 32px;">
+            <div style="font-family:'Instrument Serif',Georgia,serif; font-size:23px; line-height:1.42; letter-spacing:-0.01em; margin:0 0 24px; text-wrap:pretty;">“{{ q.text }}”</div>
+            <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#9A7327;">{{ q.who }}</div>
+            <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#9A9184; margin-top:4px;">{{ q.where }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#ADA495; margin-top:20px;">Illustrative — pilot feedback, names withheld until launch.</div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div id="pricing" style="padding:104px 32px 116px; background:#EAE2D0;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:44px; flex-wrap:wrap; margin-bottom:48px;">
+        <div>
+          <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#9A7327; margin-bottom:24px;">08 — Pricing</div>
+          <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(36px,4.2vw,62px); line-height:1.02; font-weight:400; letter-spacing:-0.025em; margin:0; max-width:560px;">Priced by pupils, not per feature.</h2>
+        </div>
+        <div data-anim="up" style="display:flex; gap:5px; background:#DFD3B9; padding:5px; border-radius:999px;">
+          <sc-for list="{{ bands }}" as="b" hint-placeholder-count="3">
+            <div onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <sc-for list="{{ plans }}" as="p" hint-placeholder-count="2">
+          <div data-anim="up" style="{{ p.style }}">
+            <div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:{{ p.kickFg }};">{{ p.kicker }}</div>
+            <div style="font-family:'Instrument Serif',Georgia,serif; font-size:34px; letter-spacing:-0.02em; margin:14px 0 4px;">{{ p.name }}</div>
+            <div style="display:flex; align-items:baseline; gap:9px; margin-bottom:24px;">
+              <span style="font-family:'DM Mono',monospace; font-size:50px; letter-spacing:-0.05em;">{{ p.price }}</span>
+              <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:{{ p.mutedFg }};">/ month · {{ p.band }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:28px;">
+              <sc-for list="{{ p.lines }}" as="l" hint-placeholder-count="4">
+                <div style="display:flex; gap:11px; font-size:16.5px; line-height:1.45;"><span style="color:{{ p.tickFg }};">✓</span><span>{{ l }}</span></div>
+              </sc-for>
+            </div>
+            <a href="#demo" style="{{ p.ctaStyle }}">{{ p.cta }}</a>
+          </div>
+        </sc-for>
+      </div>
+      <div data-anim="up" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; border:1px dashed #C3B69C; border-radius:18px; padding:20px 26px; margin-top:16px;">
+        <span style="font-size:17px; flex:1; min-width:240px;">Weekend Arabic as an add-on programme</span>
+        <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#5C5347;">+£15 / month</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMO -->
+  <div id="demo" style="padding:112px 32px 84px; background:#1E1913; color:#F2EDE3;">
+    <div style="max-width:1320px; margin:0 auto;">
+      <div style="display:grid; grid-template-columns:1.08fr 1fr; gap:64px; align-items:start;">
+        <div>
+          <div data-anim="up" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#CF9F45; margin-bottom:24px;">09 — Book a demo</div>
+          <h2 data-anim="up" style="font-family:'Instrument Serif',Georgia,serif; font-size:clamp(40px,5vw,76px); line-height:0.98; font-weight:400; letter-spacing:-0.03em; margin:0 0 26px;">Twenty minutes, your own roster.</h2>
+          <p data-anim="up" style="font-size:18.5px; line-height:1.62; color:#CBBFA8; max-width:460px; margin:0;">Send us a class list and we'll set the portal up with your real classes, timetable and fees before the call — so you see your maktab, not a sample one.</p>
+        </div>
+        <div data-anim="up" style="background:#25201A; border:1px solid #3B332A; border-radius:24px; padding:28px;">
+          <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+              <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#8C8172; margin-bottom:8px;">Madrasah</div>
+              <input value="{{ school }}" onChange="{{ setSchool }}" placeholder="Madrasah Talimul Islam" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:16px; padding:13px 15px; border-radius:12px; border:1px solid #3B332A; background:#1E1913; color:#F2EDE3; outline:none;" />
+            </div>
+            <div>
+              <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#8C8172; margin-bottom:8px;">Email</div>
+              <input value="{{ email }}" onChange="{{ setEmail }}" placeholder="office@madrasah.org" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:16px; padding:13px 15px; border-radius:12px; border:1px solid #3B332A; background:#1E1913; color:#F2EDE3; outline:none;" />
+            </div>
+            <div>
+              <div style="font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#8C8172; margin-bottom:8px;">Pupils</div>
+              <div style="display:flex; gap:5px; background:#1E1913; padding:5px; border-radius:999px;">
+                <sc-for list="{{ demoBands }}" as="b" hint-placeholder-count="3">
+                  <div onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <button onClick="{{ submit }}" style="font-family:inherit; font-size:15px; font-weight:600; padding:15px; border-radius:999px; border:none; background:#C86A40; color:#FFF7EC; cursor:pointer;" style-hover="background:#B4552C;">{{ cta }}</button>
+            <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:15px; color:#AFC189; line-height:1.5;">{{ flash }}</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; border-top:1px solid #3B332A; margin-top:76px; padding-top:26px; font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#8C8172;">
+        <span style="color:#F2EDE3;">Madad</span>
+        <span>Maktab · Ḥifẓ · Tarbiyyah</span>
+        <span style="margin-left:auto;">© 2026 · Built with the maktab, not for it</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#B4552C&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#B4552C&quot;,&quot;#9A7327&quot;,&quot;#5E6E45&quot;,&quot;#2A231C&quot;]}}">
+class Component extends DCLogic {
+  rootRef = React.createRef();
+  state = { band: "m", school: "", email: "", demoBand: "51–150", sent: false };
+
+  componentDidMount() {
+    const t0 = Date.now();
+    const boot = () => {
+      const root = this.rootRef.current;
+      if (!root) return;
+      const cv = root.querySelector("[data-el='canvas']");
+      if (cv && window.V2HERO && !this.hero) {
+        try { this.hero = window.V2HERO(cv); } catch (e) { this.hero = null; }
+      }
+      if (!this.hero && window.V2HERO !== null && Date.now() - t0 < 9000) setTimeout(boot, 250);
+    };
+    boot();
+    this.tick = this.tick.bind(this);
+    this.raf = requestAnimationFrame(this.tick);
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+
+  tick() {
+    const root = this.rootRef.current;
+    if (root) {
+      const vh = window.innerHeight;
+      const cl = (v) => Math.max(0, Math.min(1, v));
+      const ease = (v) => v * v * (3 - 2 * v);
+      root.querySelectorAll("[data-anim]").forEach(el => {
+        const r = el.getBoundingClientRect();
+        const kind = el.dataset.anim;
+        if (kind === "up") {
+          const q = ease(cl((vh * 0.94 - r.top) / (vh * 0.3)));
+          el.style.opacity = q;
+          el.style.transform = "translateY(" + ((1 - q) * 26).toFixed(2) + "px)";
+          return;
+        }
+        if (kind === "hero") {
+          const hp = cl(-r.top / Math.max(1, r.height + vh * 0.4));
+          if (this.hero) this.hero.setScroll(hp);
+          return;
+        }
+        const p = cl((vh - r.top) / (vh * 0.72 + r.height * 0.55));
+        if (kind === "sheets") {
+          const stack = el.querySelector("[data-el='stack']");
+          if (!stack) return;
+          const a = ease(cl((p - 0.1) / 0.65));
+          stack.querySelectorAll("[data-sheet]").forEach(sh => {
+            const i = +sh.dataset.sheet, last = i === 4;
+            const sp = a * (last ? 0 : 1);
+            const y = last ? a * 4 : (i - 1.5) * 88 * sp;
+            const z = last ? a * 120 : -i * 44 - sp * 86;
+            const rz = last ? 0 : (i - 1.5) * 6 * sp;
+            sh.style.transform = "translate3d(" + (last ? 0 : (i - 1.5) * 22 * sp).toFixed(1) + "px," + y.toFixed(1) + "px," + z.toFixed(1) + "px) rotateX(" + (11 - a * 9).toFixed(1) + "deg) rotateZ(" + rz.toFixed(1) + "deg)";
+            sh.style.opacity = last ? String(ease(cl((a - 0.55) / 0.35))) : String(0.4 + sp * 0.6);
+            sh.style.zIndex = last ? 9 : String(5 - i);
+          });
+          return;
+        }
+        if (kind === "tour") {
+          const a = cl((p - 0.05) / 0.85);
+          const idx = a < 0.36 ? 0 : a < 0.68 ? 1 : 2;
+          el.querySelectorAll("[data-screen]").forEach(s => {
+            const on = +s.dataset.screen === idx;
+            s.style.opacity = on ? "1" : "0";
+            s.style.transform = "translateY(" + (on ? 0 : 12) + "px)";
+            s.style.transition = "opacity .4s ease, transform .4s ease";
+          });
+          el.querySelectorAll("[data-stop]").forEach(s => {
+            const on = +s.dataset.stop === idx;
+            s.style.opacity = on ? "1" : "0.36";
+            s.style.borderLeftColor = on ? "#B4552C" : "transparent";
+            s.style.transition = "opacity .3s ease, border-color .3s ease";
+          });
+          return;
+        }
+        if (kind === "hifz") {
+          const a = ease(cl((p - 0.12) / 0.62));
+          const done = Math.round(a * 12);
+          el.querySelectorAll("[data-juz]").forEach(c => {
+            const i = +c.dataset.juz, on = i < done, cur = i === done;
+            c.style.background = on ? "#5E6E45" : cur ? "#C86A40" : "#FBF7EE";
+            c.style.borderColor = on ? "#5E6E45" : cur ? "#C86A40" : "#DDD1B9";
+            c.style.color = on || cur ? "#F7F2E6" : "#9A9184";
+            c.style.height = (54 + (on ? 8 : 0) + (cur ? 16 : 0)) + "px";
+            c.style.transition = "height .25s ease";
+          });
+          const n = el.querySelector("[data-el='juzcount']");
+          if (n) n.textContent = "Juz " + done + " of 30 secured";
+          return;
+        }
+      });
+    }
+    this.raf = requestAnimationFrame(this.tick);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const accent = this.props.accent || "#B4552C";
+    const BANDS = [
+      { key: "s", label: "1–50", maktab: 49, inst: 75 },
+      { key: "m", label: "51–150", maktab: 79, inst: 119 },
+      { key: "l", label: "151+", maktab: 129, inst: 179 },
+    ];
+    const band = BANDS.find(b => b.key === s.band) || BANDS[1];
+    const sheet = (i, bg, br) => "position:absolute; top:50%; left:50%; width:336px; height:206px; margin:-103px 0 0 -168px; box-sizing:border-box; padding:22px 24px; border-radius:18px; background:" + bg + "; border:1px solid " + br + ";";
+    const pill = (bg, fg) => "font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 10px; border-radius:999px; background:" + bg + "; color:" + fg + ";";
+
+    return {
+      rootRef: this.rootRef,
+      sheets: [
+        { i: 0, kicker: "Register · Year 3 Boys", body: "8 of 9 present", sub: "Marked 4:58pm by Ustādh Bilāl", size: "27px", fg: "#1E1913", subFg: "#5C5347", kickFg: "#9A9184", style: sheet(0, "#FBF7EE", "#DDD1B9") },
+        { i: 1, kicker: "Fee ledger · July", body: "£135 outstanding", sub: "Three families · £45 termly tuition", size: "27px", fg: accent, subFg: "#5C5347", kickFg: "#9A9184", style: sheet(1, "#F6F0E3", "#DDD1B9") },
+        { i: 2, kicker: "Calendar · Autumn", body: "31 Aug – 18 Dec", sub: "October half-term falls inside the term", size: "27px", fg: "#1E1913", subFg: "#5C5347", kickFg: "#9A9184", style: sheet(2, "#FBF7EE", "#DDD1B9") },
+        { i: 3, kicker: "Ḥifẓ jotter", body: "al-Baqarah 60–66", sub: "Sabqī Juz 2 · manzil Juz 1 · 0 mistakes", size: "25px", fg: "#1E1913", subFg: "#5C5347", kickFg: "#9A9184", style: sheet(3, "#F6F0E3", "#DDD1B9") },
+        { i: 4, kicker: "Madad · one record", body: "One child, one page.", sub: "Attendance, fees, ḥifẓ and character together.", size: "27px", fg: "#F2EDE3", subFg: "#CBBFA8", kickFg: "#CF9F45", style: sheet(4, "#1E1913", "#1E1913") },
+      ],
+      roles: [
+        { num: "01 / Office", name: "Office", blurb: "Runs the whole maktab from one board.", does: ["Mark any class register", "Chase fees and print invoices", "Admissions, leave and medical"] },
+        { num: "02 / Teacher", name: "Teacher", blurb: "Two taps before the lesson starts.", does: ["Register, late arrivals, absences", "Set work and review homework", "Award Iḥsān Points with a reason"] },
+        { num: "03 / Parent", name: "Parent", blurb: "The week their child actually had.", does: ["Attendance and behaviour notes", "Pay tuition, keep receipts", "Report an absence in ten seconds"] },
+        { num: "04 / Pupil", name: "Pupil", blurb: "One screen, one task, larger type.", does: ["Tonight's sabaq and homework", "Ṣalāh and duʿāʾ tracker", "Their own Iḥsān Points"] },
+        { num: "05 / Murabbī", name: "Murabbī", blurb: "Tarbiyyah seen across the cohort.", does: ["Character trends by class", "Ḥifẓ diary and grades", "Pastoral notes kept private"] },
+      ],
+      stops: [
+        { i: 0, num: "Stop 01", title: "Take the register", body: "Present, late, absent — marked in under a minute, closed at 5:05pm, chased automatically." },
+        { i: 1, num: "Stop 02", title: "Award Iḥsān Points", body: "A reason is required. Parents see the reason, not just a running total." },
+        { i: 2, num: "Stop 03", title: "Settle the fees", body: "Termly tuition with sibling discounts, paid in the app, receipted instantly." },
+      ],
+      screens: [
+        { i: 0, wrapStyle: "position:absolute; inset:0; padding:26px 30px;", title: "Register · Year 3 Boys", meta: "Thursday 2 July · lesson 1, 5:00pm", rows: [
+          { label: "Ayyub Ahmad Hoque", detail: "", tag: "Absent", pill: pill("#F4E1D8", accent) },
+          { label: "Bilal Karim", detail: "", tag: "Present", pill: pill("#E6EBDA", "#4A5836") },
+          { label: "Hafsah Noor", detail: "5:12pm", tag: "Late", pill: pill("#F5E9CE", "#8A6A1E") },
+          { label: "Maryam Sidat", detail: "", tag: "Present", pill: pill("#E6EBDA", "#4A5836") },
+          { label: "Yusuf Patel", detail: "", tag: "Present", pill: pill("#E6EBDA", "#4A5836") },
+        ] },
+        { i: 1, wrapStyle: "position:absolute; inset:0; padding:26px 30px; opacity:0;", title: "Iḥsān Points", meta: "This week · awarded by 4 staff", rows: [
+          { label: "Maryam Sidat", detail: "Helped with wuḍūʾ", tag: "+3", pill: pill("#F4E1D8", accent) },
+          { label: "Ayyub Ahmad Hoque", detail: "Ṣalāh unprompted", tag: "+2", pill: pill("#F4E1D8", accent) },
+          { label: "Yusuf Patel", detail: "Truthful about sabaq", tag: "+2", pill: pill("#F4E1D8", accent) },
+          { label: "Hafsah Noor", detail: "Tidied the classroom", tag: "+1", pill: pill("#F4E1D8", accent) },
+        ] },
+        { i: 2, wrapStyle: "position:absolute; inset:0; padding:26px 30px; opacity:0;", title: "Fees · July", meta: "13 families · £45 termly tuition", rows: [
+          { label: "Hoque family", detail: "£45.00", tag: "Overdue", pill: pill("#F4E1D8", accent) },
+          { label: "Malik family", detail: "£45.00", tag: "Overdue", pill: pill("#F4E1D8", accent) },
+          { label: "Sidat family", detail: "£45.00", tag: "Due 1 Jul", pill: pill("#F5E9CE", "#8A6A1E") },
+          { label: "Patel family", detail: "£0.00", tag: "Paid", pill: pill("#E6EBDA", "#4A5836") },
+        ] },
+      ],
+      ledger: [
+        { pts: 3, reason: "Helped a younger pupil with wuḍūʾ", who: "Apa Samia · Year 2b" },
+        { pts: 2, reason: "Ṣalāh prayed without being asked", who: "Ustādh Bilāl · Year 3 Boys" },
+        { pts: 2, reason: "Truthful about unfinished sabaq", who: "Ustādh Bilāl · Year 3 Boys" },
+        { pts: 1, reason: "Stayed behind to tidy the classroom", who: "Apa Zainab · Year 1a" },
+        { pts: 2, reason: "Read manzil for a struggling classmate", who: "Murabbī · Ḥifẓ circle" },
+      ],
+      panels: [
+        { figure: "92.8%", label: "Attendance, term to date", fg: "#1E1913",
+          body: "Registers close at 5:05pm. Whoever hasn't marked gets a nudge; whoever's absent twice in a row surfaces on the office board before it becomes a pattern.",
+          rows: [
+            { name: "Year 1a", tag: "9 on roll", value: "91.1%", fg: "#8A6A1E" },
+            { name: "Ḥifẓ circle", tag: "4 on roll", value: "96.7%", fg: "#4A5836" },
+            { name: "Zayd Islam", tag: "Below 85%", value: "80.0%", fg: accent },
+          ] },
+        { figure: "£135", label: "Outstanding · 3 families", fg: accent,
+          body: "Termly tuition, enrolment fees and sibling discounts calculated for you. Parents pay in the app, receipts land instantly, and the treasurer stops chasing at the door.",
+          rows: [
+            { name: "Hoque family", tag: "Overdue", value: "£45", fg: accent },
+            { name: "Malik family", tag: "Overdue", value: "£45", fg: accent },
+            { name: "Sidat family", tag: "Due 1 Jul", value: "£45", fg: "#8A6A1E" },
+          ] },
+      ],
+      juz: Array.from({ length: 30 }, (_, i) => ({ i, n: i + 1 })),
+      hifzNotes: [
+        { kind: "Sabaq", passage: "al-Baqarah 60–66", grade: "Excellent — 0 mistakes, heard by Ustādh Bilāl" },
+        { kind: "Sabqī", passage: "Juz 2 · first half", grade: "Good — 2 prompts, repeat tomorrow" },
+        { kind: "Manzil", passage: "Juz 1", grade: "Secure — revised at the Saturday sitting" },
+      ],
+      quotes: [
+        { text: "The registers used to take until Thursday to add up. Now the office knows by 5:05 on Monday.", who: "Head of maktab", where: "Evening maktab · 130 pupils" },
+        { text: "Parents stopped asking what their child did. They can see the reason a point was given.", who: "Teacher, Year 2", where: "Weekend madrasah · 60 pupils" },
+        { text: "Ḥifẓ runs to its own calendar. That one setting saved us a separate spreadsheet.", who: "Ḥifẓ murabbī", where: "Ḥifẓ programme · 24 pupils" },
+      ],
+      bands: BANDS.map(b => ({
+        label: b.label,
+        onClick: () => this.setState({ band: b.key }),
+        style: "font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; padding:11px 18px; border-radius:999px; cursor:pointer; " +
+          (s.band === b.key ? "background:#1E1913; color:#F2EDE3;" : "color:#5C5347;"),
+      })),
+      plans: [
+        { kicker: "Most maktabs start here", name: "Maktab Plan", price: "£" + band.maktab, band: band.label + " pupils",
+          kickFg: "#9A7327", mutedFg: "#9A9184", tickFg: accent,
+          lines: ["Registers, absences, late arrivals", "Fees, invoices and sibling discounts", "Ḥifẓ diary with its own calendar", "Parent and pupil apps included"],
+          cta: "Book a demo",
+          style: "background:#FBF7EE; border:1px solid #DDD1B9; border-radius:24px; padding:34px 34px 36px;",
+          ctaStyle: "display:inline-block; font-size:14px; font-weight:600; border:1px solid #1E1913; color:#1E1913; padding:14px 26px; border-radius:999px;" },
+        { kicker: "Adds ʿĀlimiyyah", name: "Full Institute", price: "£" + band.inst, band: band.label + " pupils",
+          kickFg: "#CF9F45", mutedFg: "#8C8172", tickFg: "#CF9F45",
+          lines: ["Everything in Maktab Plan", "ʿĀlimiyyah kitāb progress and exams", "Timetable builder across seven years", "Staff clock, inventory and reports"],
+          cta: "Talk to us",
+          style: "background:#1E1913; color:#F2EDE3; border:1px solid #1E1913; border-radius:24px; padding:34px 34px 36px;",
+          ctaStyle: "display:inline-block; font-size:14px; font-weight:600; background:#C86A40; color:#FFF7EC; padding:14px 26px; border-radius:999px;" },
+      ],
+      school: s.school, email: s.email,
+      setSchool: e => this.setState({ school: e.target.value, sent: false }),
+      setEmail: e => this.setState({ email: e.target.value, sent: false }),
+      demoBands: ["1–50", "51–150", "151+"].map(label => ({
+        label,
+        onClick: () => this.setState({ demoBand: label }),
+        style: "flex:1; text-align:center; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.08em; padding:11px 6px; border-radius:999px; cursor:pointer; " +
+          (s.demoBand === label ? "background:#F2EDE3; color:#1E1913;" : "color:#CBBFA8;"),
+      })),
+      submit: () => this.setState({ sent: true }),
+      cta: s.sent ? "Request sent" : "Request a demo",
+      sent: s.sent,
+      flash: "Thank you — we'll email " + (s.email || "you") + " to arrange a time, with " + (s.school || "your madrasah") + " already set up for " + s.demoBand + " pupils. (Prototype: nothing sent.)",
+    };
+  }
+}
+
+</script>
+</body>
+</html>

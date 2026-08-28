@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1F1B18;--ink-2:#5f584d;--muted:#8a8073;--muted-2:#b3a894;--bg:#F4F1EA;--surface-2:#EDE6D9;--border:#E4DDCE;--border-2:#DCD2C0;--primary:#C2603C;--primary-700:#9d4a2c;--teal-700:#B0563A;--success:#647B4C;--success-bg:#EAEBD9;--warn-bg:#F3E7CE;--surface:#FBF9F4;}
+  body{margin:0;background:#efece4;font-family:'Newsreader',Georgia,serif;-webkit-font-smoothing:antialiased;}
+  a{color:var(--primary);text-decoration:none;} a:hover{color:var(--primary-700);}
+  .mc{font-family:'Marcellus','Newsreader',Georgia,serif;}
+  .dv-turn{padding:40px 44px 34px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:500 14px/1.2 'Marcellus',serif;color:#1a1a1a}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+  .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 'Newsreader',serif;color:rgba(0,0,0,.55)}
+  .dv-opt:target .dv-oid{background:var(--primary);color:#fff}
+  .dv-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 4px 18px -8px rgba(31,27,24,.18)}
+  .dv-next{margin:24px 0 0;font:13px/1.6 'Newsreader',serif;color:rgba(0,0,0,.5)}
+  .hd{padding:22px 26px 18px;border-bottom:1px solid var(--border);}
+  .kick{font-family:'Marcellus',serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal-700);}
+  .h{font-family:'Marcellus',serif;font-size:23px;color:var(--ink);margin-top:5px;letter-spacing:-.01em;}
+  .sub{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .foot{padding:16px 26px;background:#fff;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .tlab{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+  .tval{font-family:'Marcellus',serif;font-size:24px;color:var(--ink);}
+  .co{font-family:inherit;font-size:14px;font-weight:600;padding:12px 22px;border-radius:11px;border:none;background:var(--primary);color:#fff;cursor:pointer;}
+  .incl{font-size:10px;color:var(--success);background:var(--success-bg);padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;}
+</style>
+</helmet>
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Modular pricing — one system, buy only what you run</span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>À la carte · flat monthly per programme</div>
+      <div class="dv-card" style="width:480px;">
+        <div class="hd"><div class="kick">Settings · Modules &amp; Billing</div><div class="h">Choose what you run</div><div class="sub">One flat monthly price per programme. Turn anything on or off whenever you like — Tarbiyyah &amp; Ṣalāh tracking are built into every programme.</div></div>
+        <div style="padding:8px 26px 18px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--surface-2);">
+            <div style="flex:1;"><div style="font-weight:600;color:var(--ink);font-size:14px;">Core platform<span class="incl">Always included</span></div><div style="font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;">Students, staff, attendance, comms, fees, reports, House Points &amp; Staff Clock.</div></div>
+            <div style="text-align:right;white-space:nowrap;"><span class="mc" style="font-size:17px;color:var(--ink);">£19</span><span style="font-size:11px;color:var(--muted);">/mo</span></div>
+          </div>
+          <sc-for list="{{ rowsA }}" as="m" hint-placeholder-count="3">
+            <div style="{{ m.rowStyle }}">
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-weight:600;color:var(--ink);font-size:14px;">{{ m.name }}</span><span style="{{ m.tagStyle }}">{{ m.tag }}</span></div>
+                <div style="font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;">{{ m.desc }}</div>
+                <button onClick="{{ m.onClick }}" style="{{ m.btnStyle }}">{{ m.btnLabel }}</button>
+              </div>
+              <div style="text-align:right;white-space:nowrap;"><div><span class="mc" style="font-size:17px;color:var(--ink);">{{ m.price }}</span><span style="font-size:11px;color:var(--muted);">/mo</span></div><div style="{{ m.statusStyle }}">{{ m.statusText }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="foot"><div><div class="tlab">Your plan</div><div class="tval">{{ totalA }}<span style="font-size:12px;color:var(--muted);">/mo</span></div></div><button onClick="{{ checkoutA }}" class="co">Review &amp; checkout</button></div>
+        <sc-if value="{{ flashA }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 26px 16px;font-size:12px;color:var(--success);background:var(--success-bg);">✓ {{ flashA }}</div></sc-if>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Per active student · scales with the madrasah</div>
+      <div class="dv-card" style="width:480px;">
+        <div class="hd"><div class="kick">Settings · Modules &amp; Billing</div><div class="h">Pay for who you teach</div><div class="sub">Each programme is priced per active student, so a small maktab pays little and a large institute pays fairly. Tarbiyyah &amp; Ṣalāh built in.</div></div>
+        <div style="padding:18px 26px 8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="font-size:12px;color:var(--muted);">Active students</div>
+            <div class="mc" style="font-size:20px;color:var(--ink);">{{ studentsBLabel }}</div>
+          </div>
+          <input type="range" min="10" max="300" step="5" value="{{ studentsBVal }}" onChange="{{ setStudentsB }}" style="width:100%;margin:10px 0 4px;accent-color:var(--primary);">
+        </div>
+        <div style="padding:2px 26px 18px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--surface-2);">
+            <div style="flex:1;"><div style="font-weight:600;color:var(--ink);font-size:14px;">Core platform<span class="incl">Always included</span></div><div style="font-size:12px;color:var(--muted);margin-top:5px;">Admin, attendance, comms, fees, reports &amp; more.</div></div>
+            <div style="text-align:right;white-space:nowrap;"><div class="mc" style="font-size:14px;color:var(--ink);">£0.40</div><div style="font-size:10px;color:var(--muted);">/student</div></div>
+          </div>
+          <sc-for list="{{ rowsB }}" as="m" hint-placeholder-count="3">
+            <div style="{{ m.rowStyle }}">
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-weight:600;color:var(--ink);font-size:14px;">{{ m.name }}</span><span style="{{ m.tagStyle }}">{{ m.tag }}</span></div>
+                <div style="font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;">{{ m.subLine }}</div>
+                <button onClick="{{ m.onClick }}" style="{{ m.btnStyle }}">{{ m.btnLabel }}</button>
+              </div>
+              <div style="text-align:right;white-space:nowrap;"><div class="mc" style="font-size:14px;color:var(--ink);">{{ m.price }}</div><div style="font-size:10px;color:var(--muted);">/student</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="foot"><div><div class="tlab">Est. monthly · {{ studentsBLabel }}</div><div class="tval">{{ totalB }}<span style="font-size:12px;color:var(--muted);">/mo</span></div></div><button onClick="{{ checkoutB }}" class="co">Review &amp; checkout</button></div>
+        <sc-if value="{{ flashB }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 26px 16px;font-size:12px;color:var(--success);background:var(--success-bg);">✓ {{ flashB }}</div></sc-if>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Bundles + student tiers · simplest to sell</div>
+      <div class="dv-card" style="width:480px;">
+        <div class="hd"><div class="kick">Settings · Modules &amp; Billing</div><div class="h">Pick a plan, then add extras</div><div class="sub">Start from a bundle, priced by student band. Add à la carte courses on top. Tarbiyyah &amp; Ṣalāh built in.</div></div>
+        <div style="padding:18px 26px 6px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ packagesC }}" as="p" hint-placeholder-count="2">
+              <div onClick="{{ p.onClick }}" style="{{ p.cardStyle }}">
+                <div style="flex:1;"><div style="font-weight:600;color:var(--ink);font-size:15px;">{{ p.name }}</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">{{ p.blurb }}</div></div>
+                <div style="text-align:right;white-space:nowrap;"><span class="mc" style="font-size:18px;color:var(--ink);">{{ p.price }}</span><span style="font-size:11px;color:var(--muted);">/mo</span><div style="{{ p.radioStyle }}">{{ p.radioMark }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:16px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Student band</div>
+          <div style="display:flex;gap:8px;margin-top:8px;"><sc-for list="{{ tiersC }}" as="t" hint-placeholder-count="3"><button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button></sc-for></div>
+          <div style="margin-top:18px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Add-on courses</div>
+          <div onClick="{{ toggleArabicC }}" style="{{ arabicRowStyleC }}">
+            <div style="flex:1;"><div style="font-weight:600;color:var(--ink);font-size:14px;">Weekend Arabic <span style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);">Custom course</span></div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Example institute-defined course — add your own and price it separately.</div></div>
+            <div style="text-align:right;white-space:nowrap;"><span class="mc" style="font-size:15px;color:var(--ink);">£15</span><div style="{{ arabicPillC }}">{{ arabicPillTextC }}</div></div>
+          </div>
+        </div>
+        <div class="foot"><div><div class="tlab">Your plan · {{ tierLabelC }}</div><div class="tval">{{ totalC }}<span style="font-size:12px;color:var(--muted);">/mo</span></div></div><button onClick="{{ checkoutC }}" class="co">Review &amp; checkout</button></div>
+        <sc-if value="{{ flashC }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 26px 16px;font-size:12px;color:var(--success);background:var(--success-bg);">✓ {{ flashC }}</div></sc-if>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "wire <a class="dv-oid" href="#1a">1a</a> into the portal as the real Modules &amp; Billing screen" · "make <a class="dv-oid" href="#1c">1c</a> the sign-up flow instead" · "combine <a class="dv-oid" href="#1b">1b</a> pricing with <a class="dv-oid" href="#1c">1c</a> bundles"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    ownedA: { maktabhifz: true, alimiyyah: false, arabic: false },
+    ownedB: { maktabhifz: true, alimiyyah: false, arabic: false }, studentsB: 85,
+    pkgC: "maktab", tierC: "m", arabicC: false,
+    flashA: "", flashB: "", flashC: "",
+  };
+  toggleA(k) { this.setState(s => ({ ownedA: { ...s.ownedA, [k]: !s.ownedA[k] }, flashA: "" })); }
+  toggleB(k) { this.setState(s => ({ ownedB: { ...s.ownedB, [k]: !s.ownedB[k] }, flashB: "" })); }
+  setStudentsB(e) { this.setState({ studentsB: parseInt(e.target.value, 10), flashB: "" }); }
+  setPkgC(k) { this.setState({ pkgC: k, flashC: "" }); }
+  setTierC(k) { this.setState({ tierC: k, flashC: "" }); }
+  toggleArabicC() { this.setState(s => ({ arabicC: !s.arabicC, flashC: "" })); }
+  renderVals() {
+    const s = this.state;
+    const MODULES = [
+      { key: "maktabhifz", name: "Maktab & \u1e24if\u1e93", tag: "Programme", flat: 39, per: 1.20,
+        desc: "Q\u0101\u02bfidah, Qur\u02be\u0101n, Islamic Studies, Du\u02bf\u0101s & Surahs, plus full \u1e24if\u1e93 tracking (sabaq / sabq\u012b / manzil)." },
+      { key: "alimiyyah", name: "\u02bf\u0100limiyyah", tag: "Programme", flat: 29, per: 2.50,
+        desc: "Dars-e-Ni\u1e93\u0101m\u012b: kit\u0101b progress, sanad, assessment sessions and ust\u0101dh diaries." },
+      { key: "arabic", name: "Weekend Arabic", tag: "Custom course", flat: 15, per: 0.80,
+        desc: "An example institute-defined course \u2014 add your own levels, syllabus, reports and fees." },
+    ];
+    const tagStyle = "font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);";
+    const rowStyle = (owned) => "display:flex;gap:16px;align-items:flex-start;padding:16px;margin-top:12px;border-radius:14px;border:1px " + (owned ? "solid var(--border)" : "dashed var(--border-2)") + ";background:" + (owned ? "#fff" : "transparent") + ";";
+    const btnStyle = (owned) => "margin-top:12px;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;border:1px solid " + (owned ? "var(--border-2)" : "var(--primary)") + ";background:" + (owned ? "#fff" : "var(--primary)") + ";color:" + (owned ? "var(--muted)" : "#fff") + ";";
+    const statusStyle = (owned) => "font-size:11px;margin-top:4px;color:" + (owned ? "var(--success)" : "var(--muted-2)") + ";";
+    const money = (n) => "\u00a3" + (Math.round(n * 100) / 100).toLocaleString("en-GB", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+
+    const rowsA = MODULES.map(m => {
+      const owned = !!s.ownedA[m.key];
+      return { name: m.name, tag: m.tag, tagStyle, desc: m.desc, price: money(m.flat),
+        rowStyle: rowStyle(owned), btnStyle: btnStyle(owned), statusStyle: statusStyle(owned),
+        statusText: owned ? "\u2713 Active" : "\ud83d\udd12 Locked",
+        btnLabel: owned ? "Remove module" : "+ Add this module", onClick: () => this.toggleA(m.key) };
+    });
+    const totalA = 19 + MODULES.reduce((a, m) => a + (s.ownedA[m.key] ? m.flat : 0), 0);
+
+    const rowsB = MODULES.map(m => {
+      const owned = !!s.ownedB[m.key];
+      return { name: m.name, tag: m.tag, tagStyle, price: money(m.per),
+        subLine: owned ? m.desc : "Locked \u2014 add to include in your plan.",
+        rowStyle: rowStyle(owned), btnStyle: btnStyle(owned),
+        btnLabel: owned ? "Remove module" : "+ Add this module", onClick: () => this.toggleB(m.key) };
+    });
+    const perRate = 0.40 + MODULES.reduce((a, m) => a + (s.ownedB[m.key] ? m.per : 0), 0);
+    const totalB = Math.round(perRate * s.studentsB);
+
+    const TIERS = [
+      { key: "s", label: "1\u201350", price: { maktab: 49, institute: 75 } },
+      { key: "m", label: "51\u2013150", price: { maktab: 79, institute: 119 } },
+      { key: "l", label: "150+", price: { maktab: 119, institute: 179 } },
+    ];
+    const PKGS = [
+      { key: "maktab", name: "Maktab Plan", blurb: "Core + Maktab & \u1e24if\u1e93 programme" },
+      { key: "institute", name: "Full Institute", blurb: "Core + Maktab & \u1e24if\u1e93 + \u02bf\u0100limiyyah" },
+    ];
+    const tier = TIERS.find(t => t.key === s.tierC) || TIERS[1];
+    const packagesC = PKGS.map(p => {
+      const on = s.pkgC === p.key;
+      return { name: p.name, blurb: p.blurb, price: money(tier.price[p.key]), onClick: () => this.setPkgC(p.key),
+        cardStyle: "display:flex;gap:14px;align-items:center;padding:16px;border-radius:14px;cursor:pointer;border:1.5px solid " + (on ? "var(--primary)" : "var(--border-2)") + ";background:" + (on ? "var(--warn-bg)" : "#fff") + ";",
+        radioStyle: "margin-top:6px;margin-left:auto;width:18px;height:18px;border-radius:50%;border:1.5px solid " + (on ? "var(--primary)" : "var(--border-2)") + ";display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;background:" + (on ? "var(--primary)" : "transparent") + ";",
+        radioMark: on ? "\u2713" : "" };
+    });
+    const tiersC = TIERS.map(t => {
+      const on = s.tierC === t.key;
+      return { label: t.label, onClick: () => this.setTierC(t.key),
+        style: "flex:1;font-family:inherit;font-size:12px;font-weight:600;padding:9px 0;border-radius:9px;cursor:pointer;border:1px solid " + (on ? "var(--primary)" : "var(--border-2)") + ";background:" + (on ? "var(--primary)" : "#fff") + ";color:" + (on ? "#fff" : "var(--ink-2)") + ";" };
+    });
+    const totalC = tier.price[s.pkgC] + (s.arabicC ? 15 : 0);
+
+    return {
+      rowsA, totalA: money(totalA), checkoutA: () => this.setState({ flashA: "Plan confirmed \u2014 " + money(totalA) + "/mo. (Prototype: no payment taken.)" }), flashA: s.flashA,
+      rowsB, totalB: money(totalB), studentsBVal: s.studentsB, studentsBLabel: s.studentsB + " students",
+      setStudentsB: (e) => this.setStudentsB(e), checkoutB: () => this.setState({ flashB: "Plan confirmed \u2014 " + money(totalB) + "/mo for " + s.studentsB + " students. (Prototype.)" }), flashB: s.flashB,
+      packagesC, tiersC, tierLabelC: tier.label + " students", totalC: money(totalC),
+      toggleArabicC: () => this.toggleArabicC(),
+      arabicRowStyleC: "display:flex;gap:14px;align-items:center;padding:16px;margin-top:8px;border-radius:14px;cursor:pointer;border:1px " + (s.arabicC ? "solid var(--border)" : "dashed var(--border-2)") + ";background:" + (s.arabicC ? "#fff" : "transparent") + ";",
+      arabicPillC: "font-size:11px;margin-top:4px;color:" + (s.arabicC ? "var(--success)" : "var(--muted-2)") + ";",
+      arabicPillTextC: s.arabicC ? "\u2713 Added" : "+ Add",
+      checkoutC: () => this.setState({ flashC: "Plan confirmed \u2014 " + money(totalC) + "/mo. (Prototype: no payment taken.)" }), flashC: s.flashC,
+    };
+  }
+}
+</script>
+</body>
+</html>
