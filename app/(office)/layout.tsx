@@ -1,11 +1,14 @@
 import {
   AlertTriangle,
+  Banknote,
   BookMarked,
   BookOpen,
   Calendar,
   CalendarCheck,
   CalendarDays,
   ClipboardList,
+  Clock,
+  Contact,
   FileCheck2,
   GraduationCap,
   HeartHandshake,
@@ -89,6 +92,15 @@ export default async function OfficeLayout({ children }: { children: React.React
               </OfficeNavLink>
               <OfficeNavLink href="/admissions" icon={<ClipboardList className="size-4" />}>
                 Admissions
+              </OfficeNavLink>
+              <OfficeNavLink href="/staff/directory" icon={<Contact className="size-4" />}>
+                Teacher Database
+              </OfficeNavLink>
+              <OfficeNavLink href="/staff/clock" icon={<Clock className="size-4" />}>
+                Clock In/Out
+              </OfficeNavLink>
+              <OfficeNavLink href="/staff/payroll" icon={<Banknote className="size-4" />}>
+                Payroll
               </OfficeNavLink>
             </div>
           </div>

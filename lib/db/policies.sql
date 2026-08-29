@@ -262,3 +262,15 @@ drop policy if exists tenant_isolation on policy_staff_ack;
 create policy tenant_isolation on policy_staff_ack
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table staff_clock_event enable row level security;
+drop policy if exists tenant_isolation on staff_clock_event;
+create policy tenant_isolation on staff_clock_event
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table staff_payroll_record enable row level security;
+drop policy if exists tenant_isolation on staff_payroll_record;
+create policy tenant_isolation on staff_payroll_record
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

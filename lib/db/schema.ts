@@ -108,6 +108,7 @@ export const messageAudienceEnum = pgEnum("message_audience", ["Parent", "Staff"
 export const complaintStatusEnum = pgEnum("complaint_status", ["Open", "Acknowledged", "Investigating", "Resolved"]);
 export const riskSeverityEnum = pgEnum("risk_severity", ["Low", "Medium", "High"]);
 export const riskStatusEnum = pgEnum("risk_status", ["Open", "Mitigating", "Closed"]);
+export const clockModeEnum = pgEnum("clock_mode", ["Sign in & out", "Sign in only", "Sign out only"]);
 
 // School Settings (design/README.md Settings > School). Fee configuration here is the
 // single source the Fees invoice generator reads (lib/derive/fees.ts) — never hardcode
@@ -134,6 +135,8 @@ export const madrasah = pgTable("madrasah", {
   termlyTuitionFee: numeric("termly_tuition_fee", { precision: 8, scale: 2 }).notNull().default("45.00"),
   enrolmentFee: numeric("enrolment_fee", { precision: 8, scale: 2 }).notNull().default("50.00"),
   siblingDiscountPct: integer("sibling_discount_pct").notNull().default(10),
+  requireLocationToClockIn: boolean("require_location_to_clock_in").notNull().default(false),
+  clockMode: clockModeEnum("clock_mode").notNull().default("Sign in & out"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -935,6 +938,40 @@ export const policyStaffAck = pgTable(
   (t) => [uniqueIndex("policy_staff_ack_policy_staff_idx").on(t.policyId, t.staffId)],
 );
 
+// Staff Clock In/Out (design/README.md People > Staff "Clock In/Out"). An open row
+// (clockedOutAt null) means that staff member is currently on site. Today/this-week
+// hours are always summed from these rows (invariant 1), never stored.
+export const staffClockEvent = pgTable("staff_clock_event", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  staffId: uuid("staff_id")
+    .notNull()
+    .references(() => staff.id, { onDelete: "cascade" }),
+  clockedInAt: timestamp("clocked_in_at", { withTimezone: true }).notNull(),
+  clockedOutAt: timestamp("clocked_out_at", { withTimezone: true }),
+});
+
+// Payroll (design/README.md People > Staff "Payroll"). A bookkeeping status only —
+// "paid"/"unpaid" per staff per month — never an actual money transfer.
+export const staffPayrollRecord = pgTable(
+  "staff_payroll_record",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    month: text("month").notNull(),
+    paid: boolean("paid").notNull().default(false),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("staff_payroll_record_staff_month_idx").on(t.staffId, t.month)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
   riskRegisterEntriesOwned: many(riskRegisterEntry),
@@ -942,6 +979,16 @@ export const staffRelations = relations(staff, ({ many }) => ({
   firstAidLogEntries: many(firstAidLogEntry),
   complaintsInvestigated: many(complaint),
   messages: many(message),
+  clockEvents: many(staffClockEvent),
+  payrollRecords: many(staffPayrollRecord),
+}));
+
+export const staffClockEventRelations = relations(staffClockEvent, ({ one }) => ({
+  staff: one(staff, { fields: [staffClockEvent.staffId], references: [staff.id] }),
+}));
+
+export const staffPayrollRecordRelations = relations(staffPayrollRecord, ({ one }) => ({
+  staff: one(staff, { fields: [staffPayrollRecord.staffId], references: [staff.id] }),
 }));
 
 export const klassRelations = relations(klass, ({ one, many }) => ({

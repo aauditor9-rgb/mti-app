@@ -38,6 +38,8 @@ import {
   safarQaaidahPupilStatus,
   salahLog,
   staff,
+  staffClockEvent,
+  staffPayrollRecord,
   surahCatalogItem,
   surahPupilStatus,
   task,
@@ -49,6 +51,7 @@ import { LESSON_PLAN_YEARS } from "@/lib/derive/lesson-plans";
 import { computeAdherence, last7Days } from "@/lib/derive/salah";
 import { computeHouseholdFeeSummary } from "@/lib/derive/fees";
 import { computeTaskStatus } from "@/lib/derive/tasks";
+import { computeClockStatus } from "@/lib/derive/staff";
 import type { AdmissionYear } from "@/lib/derive/admissions";
 
 export async function getMadrasah() {
@@ -624,4 +627,51 @@ export async function listPolicies(madrasahId: string) {
     ackedCount: p.acks.filter((a) => a.acknowledgedAt).length,
     totalStaff: p.acks.length,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Staff Directory (People > Staff > Teacher Database)
+// ---------------------------------------------------------------------------
+
+export async function listStaffDirectory(madrasahId: string) {
+  return db.query.staff.findMany({
+    where: eq(staff.madrasahId, madrasahId),
+    orderBy: asc(staff.name),
+    with: { classesLed: true },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Staff Clock In/Out (People > Staff)
+// ---------------------------------------------------------------------------
+
+export async function listStaffClockStatuses(madrasahId: string) {
+  const [staffRows, events] = await Promise.all([
+    listStaff(madrasahId),
+    db.select().from(staffClockEvent).where(eq(staffClockEvent.madrasahId, madrasahId)),
+  ]);
+
+  return staffRows.map((s) => {
+    const staffEvents = events.filter((e) => e.staffId === s.id);
+    return { staff: s, ...computeClockStatus(staffEvents) };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Payroll (People > Staff)
+// ---------------------------------------------------------------------------
+
+export async function listPayrollForMonth(madrasahId: string, month: string) {
+  const [staffRows, records] = await Promise.all([
+    listStaff(madrasahId),
+    db
+      .select()
+      .from(staffPayrollRecord)
+      .where(and(eq(staffPayrollRecord.madrasahId, madrasahId), eq(staffPayrollRecord.month, month))),
+  ]);
+
+  return staffRows.map((s) => {
+    const record = records.find((r) => r.staffId === s.id);
+    return { staff: s, paid: record?.paid ?? false, recordId: record?.id ?? null };
+  });
 }
