@@ -12,6 +12,7 @@ import {
   attendanceMark,
   concern,
   duaCatalogItem,
+  duaPupilStatus,
   homework,
   ihsanAward,
   ihsanLedger,
@@ -21,9 +22,11 @@ import {
   pupil,
   registerSubmission,
   safarQaaidahLevel,
+  safarQaaidahPupilStatus,
   salahLog,
   staff,
   surahCatalogItem,
+  surahPupilStatus,
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
@@ -358,4 +361,49 @@ export async function getSafarQaaidahTrackerForLevel(madrasahId: string, levelNu
     }),
   ]);
   return { pupils, level };
+}
+
+// Knowledge Passport — see lib/derive/knowledge-passport.ts for why only these three
+// strands (of the prototype's four) are computed. yearBand also gates which strands
+// apply to this pupil: Surahs has no Reception catalog, Safar Qaaidah only applies to
+// the Foundation band that timetables Qaaidah (see listPupilsInSafarQaaidahBand above).
+export async function getKnowledgePassportForPupil(madrasahId: string, displayId: string) {
+  const pupilRow = await getPupil(madrasahId, displayId);
+  if (!pupilRow) return null;
+
+  const yearBand = pupilRow.class?.yearBand ?? null;
+  const duasApplicable = yearBand !== null;
+  const surahsApplicable = yearBand !== null && yearBand !== "Reception";
+  const safarQaaidahApplicable = yearBand !== null && SAFAR_QAAIDAH_BANDS.includes(yearBand);
+
+  const [duas, surahs, safarLevels] = await Promise.all([
+    duasApplicable
+      ? db.query.duaCatalogItem.findMany({
+          where: and(eq(duaCatalogItem.madrasahId, madrasahId), eq(duaCatalogItem.year, yearBand!)),
+          orderBy: asc(duaCatalogItem.orderIndex),
+          with: { statuses: { where: eq(duaPupilStatus.pupilId, pupilRow.id) } },
+        })
+      : Promise.resolve([]),
+    surahsApplicable
+      ? db.query.surahCatalogItem.findMany({
+          where: and(eq(surahCatalogItem.madrasahId, madrasahId), eq(surahCatalogItem.year, yearBand!)),
+          orderBy: asc(surahCatalogItem.orderIndex),
+          with: { statuses: { where: eq(surahPupilStatus.pupilId, pupilRow.id) } },
+        })
+      : Promise.resolve([]),
+    safarQaaidahApplicable
+      ? db.query.safarQaaidahLevel.findMany({
+          where: eq(safarQaaidahLevel.madrasahId, madrasahId),
+          orderBy: asc(safarQaaidahLevel.levelNumber),
+          with: {
+            items: {
+              orderBy: (item, { asc }) => [asc(item.orderIndex)],
+              with: { statuses: { where: eq(safarQaaidahPupilStatus.pupilId, pupilRow.id) } },
+            },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  return { pupil: pupilRow, yearBand, duasApplicable, duas, surahsApplicable, surahs, safarQaaidahApplicable, safarLevels };
 }
