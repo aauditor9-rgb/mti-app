@@ -15,6 +15,7 @@ import {
   ihsanAward,
   ihsanLedger,
   klass,
+  lessonPlan,
   madrasah,
   pupil,
   registerSubmission,
@@ -23,6 +24,7 @@ import {
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
 import { computeHomeworkProgress } from "@/lib/derive/homework";
+import { LESSON_PLAN_YEARS } from "@/lib/derive/lesson-plans";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -238,4 +240,15 @@ export async function getHomework(madrasahId: string, homeworkId: string) {
     .sort((a, b) => (a.pupil?.name ?? "").localeCompare(b.pupil?.name ?? ""));
 
   return { ...row, submissions, progress: computeHomeworkProgress(row.submissions) };
+}
+
+// Always returns all 9 year bands for the week, planned or not — matching the
+// prototype's "Not yet planned" rows so the screen is honest about what's missing.
+export async function listLessonPlansForWeek(madrasahId: string, weekStartDate: string) {
+  const plans = await db.query.lessonPlan.findMany({
+    where: and(eq(lessonPlan.madrasahId, madrasahId), eq(lessonPlan.weekStartDate, weekStartDate)),
+    with: { entries: true, setBy: true },
+  });
+  const byYear = new Map(plans.map((p) => [p.year, p]));
+  return LESSON_PLAN_YEARS.map((year) => ({ year, plan: byYear.get(year) ?? null }));
 }

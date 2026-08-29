@@ -64,6 +64,24 @@ export const admissionStageEnum = pgEnum("admission_stage", [
   "Waiting list",
   "Declined",
 ]);
+export const lessonPlanSubjectEnum = pgEnum("lesson_plan_subject", [
+  "Qaaidah",
+  "Juz Amma",
+  "Qur'an",
+  "Hifz",
+  "Sabaq",
+  "Sabqi",
+  "Manzil",
+  "Islamic Studies",
+  "Du'as Memorisation",
+  "Surah Memorisation",
+  "Tajwīd",
+  "Seerah",
+  "Akhlaaq",
+  "Fiqh",
+  "Arabic Writing",
+  "Revision / Test",
+]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -356,6 +374,41 @@ export const homeworkSubmission = pgTable(
   (t) => [uniqueIndex("homework_submission_homework_pupil_idx").on(t.homeworkId, t.pupilId)],
 );
 
+// Weekly curriculum plan, one per year band per week (design/README.md "Weekly Lesson
+// Plans" — Reception–Year 8, shared across a year's classes/sections rather than
+// per-class). Content lives in flexible subject/content entries rather than fixed
+// columns, since which strands apply (Qaaidah vs Sabaq/Sabqi/Manzil) varies by year.
+export const lessonPlan = pgTable(
+  "lesson_plan",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    year: admissionYearEnum("year").notNull(),
+    weekStartDate: date("week_start_date").notNull(),
+    setByStaffId: uuid("set_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("lesson_plan_year_week_idx").on(t.madrasahId, t.year, t.weekStartDate)],
+);
+
+export const lessonPlanEntry = pgTable(
+  "lesson_plan_entry",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    lessonPlanId: uuid("lesson_plan_id")
+      .notNull()
+      .references(() => lessonPlan.id, { onDelete: "cascade" }),
+    subject: lessonPlanSubjectEnum("subject").notNull(),
+    content: text("content").notNull(),
+  },
+  (t) => [uniqueIndex("lesson_plan_entry_plan_subject_idx").on(t.lessonPlanId, t.subject)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -439,4 +492,13 @@ export const homeworkSubmissionRelations = relations(homeworkSubmission, ({ one 
 
 export const applicantStageLogRelations = relations(applicantStageLog, ({ one }) => ({
   applicant: one(applicant, { fields: [applicantStageLog.applicantId], references: [applicant.id] }),
+}));
+
+export const lessonPlanRelations = relations(lessonPlan, ({ one, many }) => ({
+  setBy: one(staff, { fields: [lessonPlan.setByStaffId], references: [staff.id] }),
+  entries: many(lessonPlanEntry),
+}));
+
+export const lessonPlanEntryRelations = relations(lessonPlanEntry, ({ one }) => ({
+  lessonPlan: one(lessonPlan, { fields: [lessonPlanEntry.lessonPlanId], references: [lessonPlan.id] }),
 }));

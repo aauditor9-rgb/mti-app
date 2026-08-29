@@ -100,3 +100,15 @@ drop policy if exists tenant_isolation on homework_submission;
 create policy tenant_isolation on homework_submission
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table lesson_plan enable row level security;
+drop policy if exists tenant_isolation on lesson_plan;
+create policy tenant_isolation on lesson_plan
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table lesson_plan_entry enable row level security;
+drop policy if exists tenant_isolation on lesson_plan_entry;
+create policy tenant_isolation on lesson_plan_entry
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
