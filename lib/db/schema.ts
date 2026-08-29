@@ -83,6 +83,8 @@ export const lessonPlanSubjectEnum = pgEnum("lesson_plan_subject", [
   "Revision / Test",
 ]);
 export const salahPrayerEnum = pgEnum("salah_prayer", ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"]);
+export const safarCriterionEnum = pgEnum("safar_criterion", ["Recognition", "Makharij", "Fluency", "Accuracy"]);
+export const safarTesterRoleEnum = pgEnum("safar_tester_role", ["Qur'an Curriculum Lead", "Headteacher"]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -527,6 +529,74 @@ export const surahPupilStatus = pgTable(
   (t) => [uniqueIndex("surah_pupil_status_pupil_item_idx").on(t.pupilId, t.surahCatalogItemId)],
 );
 
+// Safar Qaaidah Tracker (design/README.md "Safar Qaaidah — Levels 1-10, each with named
+// completion criteria" — the prototype itself actually has 13 levels, which is what's
+// built here; the README's "1-10" is a simplification). Unlike Du'as/Surahs this isn't
+// year-scoped — pupils progress through levels individually, and the schema has no
+// per-pupil "current level" field. The pupil roster shown is every pupil in a class
+// whose session subjects include Qaaidah (klass.yearBand Reception/Year 1/Year 2, the
+// only bands that timetable it — see design/README.md "Session subjects and the lesson
+// strands they unlock"), the only grounded roster available.
+// Each level names its own completion criteria (only 3 distinct sets occur across all
+// 13 levels: Recognition+Makharij, Recognition+Makharij+Fluency, Accuracy+Fluency) —
+// stored as an array on the level; "fully mastered" checks only the criteria a level
+// actually lists, same as the prototype's own per-level header text.
+export const safarQaaidahLevel = pgTable(
+  "safar_qaaidah_level",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    levelNumber: integer("level_number").notNull(),
+    criteria: safarCriterionEnum("criteria").array().notNull(),
+    testedByName: text("tested_by_name"),
+    testedByRole: safarTesterRoleEnum("tested_by_role"),
+    testedAt: timestamp("tested_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("safar_qaaidah_level_madrasah_level_idx").on(t.madrasahId, t.levelNumber)],
+);
+
+export const safarQaaidahItem = pgTable(
+  "safar_qaaidah_item",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    levelId: uuid("level_id")
+      .notNull()
+      .references(() => safarQaaidahLevel.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("safar_qaaidah_item_level_name_idx").on(t.levelId, t.name)],
+);
+
+export const safarQaaidahPupilStatus = pgTable(
+  "safar_qaaidah_pupil_status",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => safarQaaidahItem.id, { onDelete: "cascade" }),
+    recognitionMet: boolean("recognition_met").notNull().default(false),
+    makharijMet: boolean("makharij_met").notNull().default(false),
+    fluencyMet: boolean("fluency_met").notNull().default(false),
+    accuracyMet: boolean("accuracy_met").notNull().default(false),
+    readAtHome: boolean("read_at_home").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("safar_qaaidah_pupil_status_pupil_item_idx").on(t.pupilId, t.itemId)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -560,6 +630,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   salahLogs: many(salahLog),
   duaStatuses: many(duaPupilStatus),
   surahStatuses: many(surahPupilStatus),
+  safarQaaidahStatuses: many(safarQaaidahPupilStatus),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -644,4 +715,18 @@ export const surahCatalogItemRelations = relations(surahCatalogItem, ({ many }) 
 export const surahPupilStatusRelations = relations(surahPupilStatus, ({ one }) => ({
   pupil: one(pupil, { fields: [surahPupilStatus.pupilId], references: [pupil.id] }),
   item: one(surahCatalogItem, { fields: [surahPupilStatus.surahCatalogItemId], references: [surahCatalogItem.id] }),
+}));
+
+export const safarQaaidahLevelRelations = relations(safarQaaidahLevel, ({ many }) => ({
+  items: many(safarQaaidahItem),
+}));
+
+export const safarQaaidahItemRelations = relations(safarQaaidahItem, ({ one, many }) => ({
+  level: one(safarQaaidahLevel, { fields: [safarQaaidahItem.levelId], references: [safarQaaidahLevel.id] }),
+  statuses: many(safarQaaidahPupilStatus),
+}));
+
+export const safarQaaidahPupilStatusRelations = relations(safarQaaidahPupilStatus, ({ one }) => ({
+  pupil: one(pupil, { fields: [safarQaaidahPupilStatus.pupilId], references: [pupil.id] }),
+  item: one(safarQaaidahItem, { fields: [safarQaaidahPupilStatus.itemId], references: [safarQaaidahItem.id] }),
 }));

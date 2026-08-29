@@ -142,3 +142,21 @@ drop policy if exists tenant_isolation on surah_pupil_status;
 create policy tenant_isolation on surah_pupil_status
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table safar_qaaidah_level enable row level security;
+drop policy if exists tenant_isolation on safar_qaaidah_level;
+create policy tenant_isolation on safar_qaaidah_level
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table safar_qaaidah_item enable row level security;
+drop policy if exists tenant_isolation on safar_qaaidah_item;
+create policy tenant_isolation on safar_qaaidah_item
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table safar_qaaidah_pupil_status enable row level security;
+drop policy if exists tenant_isolation on safar_qaaidah_pupil_status;
+create policy tenant_isolation on safar_qaaidah_pupil_status
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

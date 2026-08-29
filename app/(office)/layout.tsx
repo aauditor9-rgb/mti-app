@@ -1,4 +1,4 @@
-import { BookMarked, BookOpen, CalendarCheck, CalendarDays, ClipboardList, GraduationCap, HeartHandshake, Moon, ScrollText, Sparkles, Users } from "lucide-react";
+import { BookMarked, BookOpen, CalendarCheck, CalendarDays, ClipboardList, GraduationCap, HeartHandshake, Layers, Moon, ScrollText, Sparkles, Users } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { getMadrasah } from "@/lib/db/queries";
 
@@ -85,6 +85,9 @@ export default async function OfficeLayout({ children }: { children: React.React
               </OfficeNavLink>
               <OfficeNavLink href="/progress-trackers/surahs" icon={<ScrollText className="size-4" />}>
                 Surahs Tracker
+              </OfficeNavLink>
+              <OfficeNavLink href="/progress-trackers/safar-qaaidah" icon={<Layers className="size-4" />}>
+                Safar Qaaidah Tracker
               </OfficeNavLink>
             </div>
           </div>

@@ -20,6 +20,7 @@ import {
   madrasah,
   pupil,
   registerSubmission,
+  safarQaaidahLevel,
   salahLog,
   staff,
   surahCatalogItem,
@@ -335,4 +336,26 @@ export async function getSurahTrackerForYear(madrasahId: string, year: Admission
     }),
   ]);
   return { pupils, items };
+}
+
+// Pupils in classes whose session subjects include Qaaidah — see safarQaaidahLevel in
+// lib/db/schema.ts for why this (not a single year band) is the tracker's roster.
+const SAFAR_QAAIDAH_BANDS: AdmissionYear[] = ["Reception", "Year 1", "Year 2"];
+
+export async function listPupilsInSafarQaaidahBand(madrasahId: string) {
+  const pupils = await listPupils(madrasahId);
+  return pupils.filter(
+    (p) => p.class?.yearBand && SAFAR_QAAIDAH_BANDS.includes(p.class.yearBand) && p.enrolmentState === "Enrolled",
+  );
+}
+
+export async function getSafarQaaidahTrackerForLevel(madrasahId: string, levelNumber: number) {
+  const [pupils, level] = await Promise.all([
+    listPupilsInSafarQaaidahBand(madrasahId),
+    db.query.safarQaaidahLevel.findFirst({
+      where: and(eq(safarQaaidahLevel.madrasahId, madrasahId), eq(safarQaaidahLevel.levelNumber, levelNumber)),
+      with: { items: { orderBy: (item, { asc }) => [asc(item.orderIndex)], with: { statuses: { with: { pupil: true } } } } },
+    }),
+  ]);
+  return { pupils, level };
 }

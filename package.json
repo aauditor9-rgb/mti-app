@@ -13,7 +13,8 @@
     "db:seed": "tsx lib/db/seed.ts",
     "db:seed:ihsan": "tsx lib/db/seed-ihsan-catalog.ts",
     "db:seed:duas": "tsx lib/db/seed-duas-catalog.ts",
-    "db:seed:surahs": "tsx lib/db/seed-surahs-catalog.ts"
+    "db:seed:surahs": "tsx lib/db/seed-surahs-catalog.ts",
+    "db:seed:safar-qaaidah": "tsx lib/db/seed-safar-qaaidah-catalog.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
