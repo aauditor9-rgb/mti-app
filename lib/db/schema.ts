@@ -7,10 +7,12 @@ import {
   date,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -86,12 +88,98 @@ export const salahPrayerEnum = pgEnum("salah_prayer", ["Fajr", "Zuhr", "Asr", "M
 export const safarCriterionEnum = pgEnum("safar_criterion", ["Recognition", "Makharij", "Fluency", "Accuracy"]);
 export const safarTesterRoleEnum = pgEnum("safar_tester_role", ["Qur'an Curriculum Lead", "Headteacher"]);
 
+export const taskPriorityEnum = pgEnum("task_priority", ["High", "Medium", "Low"]);
+export const taskCategoryEnum = pgEnum("task_category", [
+  "General",
+  "Fees",
+  "Attendance",
+  "Safeguarding",
+  "Books & Inventory",
+  "Teacher Database",
+  "Forms & Consent",
+  "Hifz Tracker",
+  "Examinations",
+]);
+export const feeLineKindEnum = pgEnum("fee_line_kind", ["Enrolment", "Tuition", "Discount"]);
+export const inventoryCategoryEnum = pgEnum("inventory_category", ["Books", "Uniform", "Stationery"]);
+export const messageChannelEnum = pgEnum("message_channel", ["WhatsApp", "SMS", "App", "Email", "In person"]);
+export const messageDirectionEnum = pgEnum("message_direction", ["Inbound", "Outbound"]);
+export const messageAudienceEnum = pgEnum("message_audience", ["Parent", "Staff", "Broadcast"]);
+export const complaintStatusEnum = pgEnum("complaint_status", ["Open", "Acknowledged", "Investigating", "Resolved"]);
+export const riskSeverityEnum = pgEnum("risk_severity", ["Low", "Medium", "High"]);
+export const riskStatusEnum = pgEnum("risk_status", ["Open", "Mitigating", "Closed"]);
+
+// School Settings (design/README.md Settings > School). Fee configuration here is the
+// single source the Fees invoice generator reads (lib/derive/fees.ts) — never hardcode
+// £45/£50/10% on a screen. Attendance rule fields are stored for display only: the
+// existing Attendance register (built before this settings screen existed) still
+// hardcodes its own 5:05pm cutoff and isn't retrofitted to read these — see the
+// Settings > School page comment for the honest caveat shown to the user.
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   brandAccent: text("brand_accent").notNull().default("#C2603C"),
+  shortName: text("short_name"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  officePhone: text("office_phone"),
+  officeEmail: text("office_email"),
+  arrivalExpectedBy: time("arrival_expected_by"),
+  markedLateAfter: time("marked_late_after"),
+  classesBeginAt: time("classes_begin_at"),
+  absenceReportingDeadline: time("absence_reporting_deadline"),
+  attendanceReviewThresholdPct: integer("attendance_review_threshold_pct"),
+  termlyTuitionFee: numeric("termly_tuition_fee", { precision: 8, scale: 2 }).notNull().default("45.00"),
+  enrolmentFee: numeric("enrolment_fee", { precision: 8, scale: 2 }).notNull().default("50.00"),
+  siblingDiscountPct: integer("sibling_discount_pct").notNull().default(10),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Calendars (design/README.md "Calendars"). Each calendar set has its own academic
+// year, teaching days, terms and holidays; a class with no calendarSetId follows the
+// first (default) calendar set. Terms are the source Fees invoice due dates derive
+// from (lib/derive/fees.ts) — invariant 5: terms and holidays must sit in the same
+// academic year.
+export const calendarSet = pgTable("calendar_set", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  teachingDays: jsonb("teaching_days").$type<string[]>().notNull().default([]),
+  academicYearStart: date("academic_year_start").notNull(),
+  academicYearEnd: date("academic_year_end").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const term = pgTable("term", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  calendarSetId: uuid("calendar_set_id")
+    .notNull()
+    .references(() => calendarSet.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+});
+
+export const holiday = pgTable("holiday", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  calendarSetId: uuid("calendar_set_id")
+    .notNull()
+    .references(() => calendarSet.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
 });
 
 export const staff = pgTable("staff", {
@@ -130,6 +218,9 @@ export const klass = pgTable(
     // lib/db/queries.ts listPupilsByYearBand, used by the Du'as tracker.
     yearBand: admissionYearEnum("year_band"),
     hifdhType: hifdhTypeEnum("hifdh_type").notNull().default("None"),
+    // Nullable: a class with no calendar assigned follows the default "Maktab evening
+    // classes" calendar — see design/README.md "Calendars" and Settings > Calendars.
+    calendarSetId: uuid("calendar_set_id").references(() => calendarSet.id, { onDelete: "set null" }),
     leadTeacherId: uuid("lead_teacher_id").references(() => staff.id, { onDelete: "set null" }),
     timing: text("timing").notNull(),
     lessons: jsonb("lessons").$type<string[]>().notNull().default([]),
@@ -597,13 +688,266 @@ export const safarQaaidahPupilStatus = pgTable(
   (t) => [uniqueIndex("safar_qaaidah_pupil_status_pupil_item_idx").on(t.pupilId, t.itemId)],
 );
 
+// Tasks (design/README.md Overview "Tasks"). assignedTo is free text rather than a
+// staff FK: the prototype's assignee list mixes named staff with generic role buckets
+// ("Office", "Headteacher") that don't correspond to a single staff row.
+export const task = pgTable("task", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  assignedTo: text("assigned_to").notNull(),
+  category: taskCategoryEnum("category").notNull().default("General"),
+  priority: taskPriorityEnum("priority").notNull().default("Medium"),
+  dueDate: date("due_date").notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Fees (design/README.md "Fees"). Charges are generated per pupil from madrasah's fee
+// config + the pupil's calendar's terms (lib/derive/fees.ts); payments are a simple
+// household-level ledger. A line's paid/due/overdue status is never stored — it's
+// derived by allocating cumulative household payments across lines oldest-due-first
+// (invariant 1), same pattern as every other ledger in this app.
+export const feeInvoiceLine = pgTable("fee_invoice_line", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" }),
+  kind: feeLineKindEnum("kind").notNull(),
+  label: text("label").notNull(),
+  termId: uuid("term_id").references(() => term.id, { onDelete: "set null" }),
+  amount: numeric("amount", { precision: 8, scale: 2 }).notNull(),
+  dueDate: date("due_date").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feePayment = pgTable("fee_payment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  householdId: uuid("household_id")
+    .notNull()
+    .references(() => household.id, { onDelete: "cascade" }),
+  amount: numeric("amount", { precision: 8, scale: 2 }).notNull(),
+  paidAt: date("paid_at").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Books & Inventory (design/README.md Finance "Books & Inventory").
+export const inventoryItem = pgTable("inventory_item", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  category: inventoryCategoryEnum("category").notNull(),
+  stock: integer("stock").notNull().default(0),
+  reorderLevel: integer("reorder_level").notNull().default(0),
+  price: numeric("price", { precision: 8, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// An issue decrements stock; unpaid issues surface on the inventory list, matching the
+// prototype's "issued unpaid" column.
+export const inventoryIssue = pgTable("inventory_issue", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id")
+    .notNull()
+    .references(() => inventoryItem.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id").references(() => pupil.id, { onDelete: "set null" }),
+  quantity: integer("quantity").notNull().default(1),
+  paid: boolean("paid").notNull().default(false),
+  issuedAt: date("issued_at").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Messages (design/README.md Communications "Messages"). An internal log, not a real
+// send integration — design/README.md's own "Messaging integrations" note in Settings
+// says an unconfigured channel must never claim delivery, so this only ever records
+// what was actually typed here, never dispatches anything externally.
+export const message = pgTable("message", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  audience: messageAudienceEnum("audience").notNull(),
+  guardianId: uuid("guardian_id").references(() => guardian.id, { onDelete: "set null" }),
+  staffId: uuid("staff_id").references(() => staff.id, { onDelete: "set null" }),
+  contactName: text("contact_name").notNull(),
+  direction: messageDirectionEnum("direction").notNull(),
+  channel: messageChannelEnum("channel").notNull(),
+  body: text("body").notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+});
+
+// Events & Jalsas (design/README.md Communications "Events & Jalsas"). The running
+// order is a jsonb array rather than a child table — it's display-only ordered text,
+// never queried or joined on.
+export const event = pgTable("event", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+  endAt: timestamp("end_at", { withTimezone: true }),
+  location: text("location"),
+  audience: text("audience"),
+  description: text("description"),
+  requiresConsent: boolean("requires_consent").notNull().default(false),
+  requiresPayment: boolean("requires_payment").notNull().default(false),
+  paymentAmount: numeric("payment_amount", { precision: 8, scale: 2 }),
+  requiresRsvp: boolean("requires_rsvp").notNull().default(false),
+  runningOrder: jsonb("running_order").$type<{ time: string; title: string; detail?: string }[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Forms & Consent (design/README.md Communications "Forms & Consent"). One response
+// row per household is pre-created when the form is issued (see actions), so
+// completion is always countable against a fixed denominator rather than inferred.
+export const formTemplate = pgTable("form_template", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  audienceLabel: text("audience_label").notNull().default("All years"),
+  deadline: date("deadline").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const formResponse = pgTable(
+  "form_response",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    formTemplateId: uuid("form_template_id")
+      .notNull()
+      .references(() => formTemplate.id, { onDelete: "cascade" }),
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => household.id, { onDelete: "cascade" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("form_response_template_household_idx").on(t.formTemplateId, t.householdId)],
+);
+
+// Complaints (design/README.md Communications "Complaints"). category is free text —
+// unlike Concerns, the design README doesn't define a fixed complaints category
+// vocabulary, so one isn't invented here.
+export const complaint = pgTable("complaint", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  reference: text("reference").notNull(),
+  title: text("title").notNull(),
+  pupilId: uuid("pupil_id").references(() => pupil.id, { onDelete: "set null" }),
+  guardianId: uuid("guardian_id").references(() => guardian.id, { onDelete: "set null" }),
+  raisedByName: text("raised_by_name").notNull().default(""),
+  category: text("category").notNull(),
+  note: text("note").notNull(),
+  submittedAt: date("submitted_at").notNull(),
+  investigatorStaffId: uuid("investigator_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  status: complaintStatusEnum("status").notNull().default("Open"),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Medical Register (design/README.md Safeguarding "Medical Register") reuses
+// pupil.allergies/medicalNotes, already on the pupil table — only the first-aid log is
+// new.
+export const firstAidLogEntry = pgTable("first_aid_log_entry", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  note: text("note").notNull(),
+  loggedByStaffId: uuid("logged_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Risk Register (design/README.md Safeguarding "Risk Register").
+export const riskRegisterEntry = pgTable("risk_register_entry", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  ownerStaffId: uuid("owner_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  reviewByDate: date("review_by_date").notNull(),
+  severity: riskSeverityEnum("severity").notNull(),
+  status: riskStatusEnum("status").notNull().default("Open"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Policy Acknowledgements (design/README.md Safeguarding "Policy Acknowledgements").
+// Only staff acknowledgement is tracked — parent acknowledgement would need a parent
+// auth session to attribute acks to, which doesn't exist yet (see design/TECH_STACK.md
+// build order item 1). No policy legal text is stored: title/version/review date only,
+// same "don't fabricate authoritative content" rule as Islamic source text elsewhere
+// in this app.
+export const policy = pgTable("policy", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  version: text("version").notNull().default("V 1.0"),
+  reviewByDate: date("review_by_date"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const policyStaffAck = pgTable(
+  "policy_staff_ack",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("policy_staff_ack_policy_staff_idx").on(t.policyId, t.staffId)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
+  riskRegisterEntriesOwned: many(riskRegisterEntry),
+  policyAcks: many(policyStaffAck),
+  firstAidLogEntries: many(firstAidLogEntry),
+  complaintsInvestigated: many(complaint),
+  messages: many(message),
 }));
 
 export const klassRelations = relations(klass, ({ one, many }) => ({
   madrasah: one(madrasah, { fields: [klass.madrasahId], references: [madrasah.id] }),
   leadTeacher: one(staff, { fields: [klass.leadTeacherId], references: [staff.id] }),
+  calendarSet: one(calendarSet, { fields: [klass.calendarSetId], references: [calendarSet.id] }),
   pupils: many(pupil),
   attendanceMarks: many(attendanceMark),
   registerSubmissions: many(registerSubmission),
@@ -612,11 +956,15 @@ export const klassRelations = relations(klass, ({ one, many }) => ({
 export const householdRelations = relations(household, ({ many }) => ({
   guardians: many(guardian),
   pupils: many(pupil),
+  feePayments: many(feePayment),
+  formResponses: many(formResponse),
 }));
 
 export const guardianRelations = relations(guardian, ({ one, many }) => ({
   household: one(household, { fields: [guardian.householdId], references: [household.id] }),
   pupilLinks: many(pupilGuardian),
+  messages: many(message),
+  complaints: many(complaint),
 }));
 
 export const pupilRelations = relations(pupil, ({ one, many }) => ({
@@ -631,6 +979,85 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   duaStatuses: many(duaPupilStatus),
   surahStatuses: many(surahPupilStatus),
   safarQaaidahStatuses: many(safarQaaidahPupilStatus),
+  feeInvoiceLines: many(feeInvoiceLine),
+  inventoryIssues: many(inventoryIssue),
+  firstAidLogEntries: many(firstAidLogEntry),
+  complaints: many(complaint),
+}));
+
+export const calendarSetRelations = relations(calendarSet, ({ many }) => ({
+  terms: many(term),
+  holidays: many(holiday),
+  classes: many(klass),
+}));
+
+export const termRelations = relations(term, ({ one, many }) => ({
+  calendarSet: one(calendarSet, { fields: [term.calendarSetId], references: [calendarSet.id] }),
+  feeInvoiceLines: many(feeInvoiceLine),
+}));
+
+export const holidayRelations = relations(holiday, ({ one }) => ({
+  calendarSet: one(calendarSet, { fields: [holiday.calendarSetId], references: [calendarSet.id] }),
+}));
+
+export const taskRelations = relations(task, () => ({}));
+
+export const feeInvoiceLineRelations = relations(feeInvoiceLine, ({ one }) => ({
+  pupil: one(pupil, { fields: [feeInvoiceLine.pupilId], references: [pupil.id] }),
+  term: one(term, { fields: [feeInvoiceLine.termId], references: [term.id] }),
+}));
+
+export const feePaymentRelations = relations(feePayment, ({ one }) => ({
+  household: one(household, { fields: [feePayment.householdId], references: [household.id] }),
+}));
+
+export const inventoryItemRelations = relations(inventoryItem, ({ many }) => ({
+  issues: many(inventoryIssue),
+}));
+
+export const inventoryIssueRelations = relations(inventoryIssue, ({ one }) => ({
+  item: one(inventoryItem, { fields: [inventoryIssue.itemId], references: [inventoryItem.id] }),
+  pupil: one(pupil, { fields: [inventoryIssue.pupilId], references: [pupil.id] }),
+}));
+
+export const messageRelations = relations(message, ({ one }) => ({
+  guardian: one(guardian, { fields: [message.guardianId], references: [guardian.id] }),
+  staff: one(staff, { fields: [message.staffId], references: [staff.id] }),
+}));
+
+export const eventRelations = relations(event, () => ({}));
+
+export const formTemplateRelations = relations(formTemplate, ({ many }) => ({
+  responses: many(formResponse),
+}));
+
+export const formResponseRelations = relations(formResponse, ({ one }) => ({
+  formTemplate: one(formTemplate, { fields: [formResponse.formTemplateId], references: [formTemplate.id] }),
+  household: one(household, { fields: [formResponse.householdId], references: [household.id] }),
+}));
+
+export const complaintRelations = relations(complaint, ({ one }) => ({
+  pupil: one(pupil, { fields: [complaint.pupilId], references: [pupil.id] }),
+  guardian: one(guardian, { fields: [complaint.guardianId], references: [guardian.id] }),
+  investigator: one(staff, { fields: [complaint.investigatorStaffId], references: [staff.id] }),
+}));
+
+export const firstAidLogEntryRelations = relations(firstAidLogEntry, ({ one }) => ({
+  pupil: one(pupil, { fields: [firstAidLogEntry.pupilId], references: [pupil.id] }),
+  loggedBy: one(staff, { fields: [firstAidLogEntry.loggedByStaffId], references: [staff.id] }),
+}));
+
+export const riskRegisterEntryRelations = relations(riskRegisterEntry, ({ one }) => ({
+  owner: one(staff, { fields: [riskRegisterEntry.ownerStaffId], references: [staff.id] }),
+}));
+
+export const policyRelations = relations(policy, ({ many }) => ({
+  acks: many(policyStaffAck),
+}));
+
+export const policyStaffAckRelations = relations(policyStaffAck, ({ one }) => ({
+  policy: one(policy, { fields: [policyStaffAck.policyId], references: [policy.id] }),
+  staff: one(staff, { fields: [policyStaffAck.staffId], references: [staff.id] }),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({

@@ -1,8 +1,35 @@
-import { BookMarked, BookOpen, CalendarCheck, CalendarDays, ClipboardList, GraduationCap, HeartHandshake, IdCard, Layers, Moon, ScrollText, Sparkles, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  BookMarked,
+  BookOpen,
+  Calendar,
+  CalendarCheck,
+  CalendarDays,
+  ClipboardList,
+  FileCheck2,
+  GraduationCap,
+  HeartHandshake,
+  IdCard,
+  Inbox,
+  Layers,
+  LayoutDashboard,
+  ListTodo,
+  MessageCircleWarning,
+  Moon,
+  Package,
+  PartyPopper,
+  Receipt,
+  ScrollText,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+  Users,
+} from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { getMadrasah } from "@/lib/db/queries";
 
-const STATIC_GROUPS = ["Overview", "Reports & Assessment", "Operations"];
+const STATIC_GROUPS = ["Reports & Assessment"];
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
@@ -32,6 +59,23 @@ export default async function OfficeLayout({ children }: { children: React.React
         </div>
 
         <nav className="flex flex-col gap-3">
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Overview
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/" icon={<LayoutDashboard className="size-4" />}>
+                Dashboard
+              </OfficeNavLink>
+              <OfficeNavLink href="/calendar" icon={<Calendar className="size-4" />}>
+                Calendar
+              </OfficeNavLink>
+              <OfficeNavLink href="/tasks" icon={<ListTodo className="size-4" />}>
+                Tasks
+              </OfficeNavLink>
+            </div>
+          </div>
+
           <div>
             <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
               People
@@ -91,6 +135,68 @@ export default async function OfficeLayout({ children }: { children: React.React
               </OfficeNavLink>
               <OfficeNavLink href="/progress-trackers/knowledge-passport" icon={<IdCard className="size-4" />}>
                 Knowledge Passport
+              </OfficeNavLink>
+            </div>
+          </div>
+
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Finance
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/finance/fees" icon={<Receipt className="size-4" />}>
+                Fees
+              </OfficeNavLink>
+              <OfficeNavLink href="/finance/inventory" icon={<Package className="size-4" />}>
+                Books &amp; Inventory
+              </OfficeNavLink>
+            </div>
+          </div>
+
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Communications
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/communications/messages" icon={<Inbox className="size-4" />}>
+                Messages
+              </OfficeNavLink>
+              <OfficeNavLink href="/communications/events" icon={<PartyPopper className="size-4" />}>
+                Events &amp; Jalsas
+              </OfficeNavLink>
+              <OfficeNavLink href="/communications/forms" icon={<FileCheck2 className="size-4" />}>
+                Forms &amp; Consent
+              </OfficeNavLink>
+              <OfficeNavLink href="/communications/complaints" icon={<MessageCircleWarning className="size-4" />}>
+                Complaints
+              </OfficeNavLink>
+            </div>
+          </div>
+
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Safeguarding
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/safeguarding/medical" icon={<Stethoscope className="size-4" />}>
+                Medical Register
+              </OfficeNavLink>
+              <OfficeNavLink href="/safeguarding/risk-register" icon={<AlertTriangle className="size-4" />}>
+                Risk Register
+              </OfficeNavLink>
+              <OfficeNavLink href="/safeguarding/policies" icon={<ShieldCheck className="size-4" />}>
+                Policy Acknowledgements
+              </OfficeNavLink>
+            </div>
+          </div>
+
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Settings
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/settings/school" icon={<SettingsIcon className="size-4" />}>
+                School
               </OfficeNavLink>
             </div>
           </div>

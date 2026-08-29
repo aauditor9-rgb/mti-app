@@ -10,29 +10,45 @@ import {
   applicant,
   applicantStageLog,
   attendanceMark,
+  calendarSet,
+  complaint,
   concern,
   duaCatalogItem,
   duaPupilStatus,
+  event,
+  feeInvoiceLine,
+  feePayment,
+  firstAidLogEntry,
+  formResponse,
+  formTemplate,
   homework,
   ihsanAward,
   ihsanLedger,
+  inventoryIssue,
+  inventoryItem,
   klass,
   lessonPlan,
   madrasah,
+  message,
+  policy,
   pupil,
   registerSubmission,
+  riskRegisterEntry,
   safarQaaidahLevel,
   safarQaaidahPupilStatus,
   salahLog,
   staff,
   surahCatalogItem,
   surahPupilStatus,
+  task,
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
 import { computeHomeworkProgress } from "@/lib/derive/homework";
 import { LESSON_PLAN_YEARS } from "@/lib/derive/lesson-plans";
 import { computeAdherence, last7Days } from "@/lib/derive/salah";
+import { computeHouseholdFeeSummary } from "@/lib/derive/fees";
+import { computeTaskStatus } from "@/lib/derive/tasks";
 import type { AdmissionYear } from "@/lib/derive/admissions";
 
 export async function getMadrasah() {
@@ -406,4 +422,206 @@ export async function getKnowledgePassportForPupil(madrasahId: string, displayId
   ]);
 
   return { pupil: pupilRow, yearBand, duasApplicable, duas, surahsApplicable, surahs, safarQaaidahApplicable, safarLevels };
+}
+
+// ---------------------------------------------------------------------------
+// Tasks (Overview)
+// ---------------------------------------------------------------------------
+
+export async function listTasks(madrasahId: string) {
+  const rows = await db.select().from(task).where(eq(task.madrasahId, madrasahId)).orderBy(asc(task.dueDate));
+  return rows.map((t) => ({ ...t, status: computeTaskStatus(t.dueDate, t.completedAt) }));
+}
+
+// ---------------------------------------------------------------------------
+// Calendars (Overview > Calendar, Settings > Calendars)
+// ---------------------------------------------------------------------------
+
+export async function listCalendarSets(madrasahId: string) {
+  return db.query.calendarSet.findMany({
+    where: eq(calendarSet.madrasahId, madrasahId),
+    orderBy: asc(calendarSet.name),
+    with: {
+      terms: { orderBy: (t, { asc: ascOrder }) => [ascOrder(t.startDate)] },
+      holidays: { orderBy: (h, { asc: ascOrder }) => [ascOrder(h.startDate)] },
+      classes: true,
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Fees (Finance)
+// ---------------------------------------------------------------------------
+
+export async function listHouseholdFeeSummaries(madrasahId: string) {
+  const pupils = await listPupils(madrasahId);
+  const enrolledPupils = pupils.filter((p) => p.enrolmentState === "Enrolled" && p.householdId);
+  const householdIds = [...new Set(enrolledPupils.map((p) => p.householdId!))];
+
+  const [lines, payments] = await Promise.all([
+    db.select().from(feeInvoiceLine).where(eq(feeInvoiceLine.madrasahId, madrasahId)),
+    db.select().from(feePayment).where(eq(feePayment.madrasahId, madrasahId)),
+  ]);
+
+  return householdIds.map((householdId) => {
+    const householdPupils = enrolledPupils.filter((p) => p.householdId === householdId);
+    const pupilNameById = new Map(householdPupils.map((p) => [p.id, p.name]));
+    const householdLines = lines
+      .filter((l) => pupilNameById.has(l.pupilId))
+      .map((l) => ({
+        id: l.id,
+        kind: l.kind,
+        label: l.label,
+        amount: Number(l.amount),
+        dueDate: l.dueDate,
+        pupilId: l.pupilId,
+        pupilName: pupilNameById.get(l.pupilId)!,
+      }));
+    const totalPaid = payments
+      .filter((p) => p.householdId === householdId)
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    const summary = computeHouseholdFeeSummary(householdLines, totalPaid);
+    const guardians = householdPupils[0]?.household?.guardians ?? [];
+    return {
+      householdId,
+      guardianName: guardians[0]?.name ?? "Unknown guardian",
+      pupils: householdPupils.map((p) => ({ id: p.id, name: p.name })),
+      lines: householdLines.map((l) => ({ ...l, status: summary.lines.find((s) => s.id === l.id)!.status })),
+      totalInvoiced: summary.totalInvoiced,
+      totalPaid: summary.totalPaid,
+      totalOutstanding: summary.totalOutstanding,
+      householdStatus: summary.householdStatus,
+      nextDueDate: summary.nextDueDate,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Books & Inventory (Finance)
+// ---------------------------------------------------------------------------
+
+export async function listInventoryItems(madrasahId: string) {
+  const [items, issues] = await Promise.all([
+    db
+      .select()
+      .from(inventoryItem)
+      .where(eq(inventoryItem.madrasahId, madrasahId))
+      .orderBy(asc(inventoryItem.category), asc(inventoryItem.name)),
+    db.select().from(inventoryIssue).where(eq(inventoryIssue.madrasahId, madrasahId)),
+  ]);
+  return items.map((item) => ({
+    ...item,
+    issuedUnpaidCount: issues
+      .filter((i) => i.itemId === item.id && !i.paid)
+      .reduce((sum, i) => sum + i.quantity, 0),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Messages (Communications)
+// ---------------------------------------------------------------------------
+
+export async function listMessages(madrasahId: string) {
+  return db.query.message.findMany({
+    where: eq(message.madrasahId, madrasahId),
+    orderBy: desc(message.sentAt),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Events & Jalsas (Communications)
+// ---------------------------------------------------------------------------
+
+export async function listEvents(madrasahId: string) {
+  return db.select().from(event).where(eq(event.madrasahId, madrasahId)).orderBy(asc(event.startAt));
+}
+
+// ---------------------------------------------------------------------------
+// Forms & Consent (Communications)
+// ---------------------------------------------------------------------------
+
+export async function listFormTemplates(madrasahId: string) {
+  const [templates, responses] = await Promise.all([
+    db.select().from(formTemplate).where(eq(formTemplate.madrasahId, madrasahId)).orderBy(desc(formTemplate.createdAt)),
+    db.select().from(formResponse).where(eq(formResponse.madrasahId, madrasahId)),
+  ]);
+  return templates.map((t) => {
+    const templateResponses = responses.filter((r) => r.formTemplateId === t.id);
+    const completedCount = templateResponses.filter((r) => r.completedAt).length;
+    return {
+      ...t,
+      totalCount: templateResponses.length,
+      completedCount,
+      outstandingCount: templateResponses.length - completedCount,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Complaints (Communications)
+// ---------------------------------------------------------------------------
+
+export async function getFormTemplateResponses(madrasahId: string, formTemplateId: string) {
+  const responses = await db.query.formResponse.findMany({
+    where: and(eq(formResponse.madrasahId, madrasahId), eq(formResponse.formTemplateId, formTemplateId)),
+    with: { household: { with: { guardians: true } } },
+  });
+  return responses.map((r) => ({
+    id: r.id,
+    completedAt: r.completedAt,
+    guardianName: r.household?.guardians[0]?.name ?? "Unknown guardian",
+  }));
+}
+
+export async function listComplaints(madrasahId: string) {
+  return db.query.complaint.findMany({
+    where: eq(complaint.madrasahId, madrasahId),
+    orderBy: desc(complaint.submittedAt),
+    with: { pupil: true, guardian: true, investigator: true },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Medical Register (Safeguarding) — pupil.allergies/medicalNotes already exist.
+// ---------------------------------------------------------------------------
+
+export async function listFirstAidLog(madrasahId: string) {
+  return db.query.firstAidLogEntry.findMany({
+    where: eq(firstAidLogEntry.madrasahId, madrasahId),
+    orderBy: desc(firstAidLogEntry.date),
+    with: { pupil: true, loggedBy: true },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Risk Register (Safeguarding)
+// ---------------------------------------------------------------------------
+
+export async function listRiskRegisterEntries(madrasahId: string) {
+  return db.query.riskRegisterEntry.findMany({
+    where: eq(riskRegisterEntry.madrasahId, madrasahId),
+    orderBy: asc(riskRegisterEntry.reviewByDate),
+    with: { owner: true },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Policy Acknowledgements (Safeguarding)
+// ---------------------------------------------------------------------------
+
+export async function listPolicies(madrasahId: string) {
+  const policies = await db.query.policy.findMany({
+    where: eq(policy.madrasahId, madrasahId),
+    orderBy: asc(policy.title),
+    with: { acks: { with: { staff: true } } },
+  });
+  return policies.map((p) => ({
+    ...p,
+    // Sorted here rather than in the query — acks has no ordering relative to staff,
+    // and sorting by staff name keeps rows stable across re-renders instead of
+    // shuffling on every ack toggle (unordered DB fetch order isn't stable).
+    acks: [...p.acks].sort((a, b) => a.staff.name.localeCompare(b.staff.name)),
+    ackedCount: p.acks.filter((a) => a.acknowledgedAt).length,
+    totalStaff: p.acks.length,
+  }));
 }
