@@ -110,6 +110,30 @@ export const riskSeverityEnum = pgEnum("risk_severity", ["Low", "Medium", "High"
 export const riskStatusEnum = pgEnum("risk_status", ["Open", "Mitigating", "Closed"]);
 export const clockModeEnum = pgEnum("clock_mode", ["Sign in & out", "Sign in only", "Sign out only"]);
 
+// Teacher/Parent/Pupil portals (design/README.md "Teacher", "Parent", "Pupil"). No real
+// auth exists yet (design/TECH_STACK.md build order item 1) — see lib/session.ts for the
+// provisional cookie-based viewer this build order item still owes.
+export const homeworkAudienceEnum = pgEnum("homework_audience", ["Whole class", "Selected students"]);
+export const leaveRequestKindEnum = pgEnum("leave_request_kind", ["Absence today", "Holiday / leave"]);
+export const leaveReportReasonEnum = pgEnum("leave_report_reason", [
+  "Illness",
+  "Doctor's or dental appointment",
+  "Family emergency",
+  "Religious or family occasion",
+  "Other",
+]);
+export const leaveHolidayReasonEnum = pgEnum("leave_holiday_reason", [
+  "Family holiday / travel",
+  "Family emergency",
+  "Bereavement (family funeral)",
+  "Religious/cultural observance not on the calendar",
+  "Other",
+]);
+export const leaveRequestStatusEnum = pgEnum("leave_request_status", ["Pending", "Approved", "Declined"]);
+export const hifzRecordTypeEnum = pgEnum("hifz_record_type", ["Sabaq", "Sabqi", "Manzil"]);
+export const hifzQualityEnum = pgEnum("hifz_quality", ["Excellent", "Strong", "Satisfactory", "Weak"]);
+export const reportStatusEnum = pgEnum("report_status", ["Draft", "Published"]);
+
 // School Settings (design/README.md Settings > School). Fee configuration here is the
 // single source the Fees invoice generator reads (lib/derive/fees.ts) — never hardcode
 // £45/£50/10% on a screen. Attendance rule fields are stored for display only: the
@@ -199,6 +223,7 @@ export const staff = pgTable("staff", {
   payRate: text("pay_rate"),
   hours: text("hours"),
   portalAccess: boolean("portal_access").notNull().default(false),
+  isHifzTeacher: boolean("is_hifz_teacher").notNull().default(false),
   dbsExpiry: date("dbs_expiry"),
   firstAidExpiry: date("first_aid_expiry"),
   safeguardingExpiry: date("safeguarding_expiry"),
@@ -453,6 +478,10 @@ export const homework = pgTable("homework", {
   subject: text("subject").notNull(),
   task: text("task").notNull(),
   dueDate: date("due_date").notNull(),
+  // "Whole class" creates a submission row for every pupil in the class; "Selected
+  // students" only for the pupils chosen at set-work time (design/README.md Teacher >
+  // Set Work "Whole class / Selected students").
+  audience: homeworkAudienceEnum("audience").notNull().default("Whole class"),
   setByStaffId: uuid("set_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -490,6 +519,8 @@ export const lessonPlan = pgTable(
     year: admissionYearEnum("year").notNull(),
     weekStartDate: date("week_start_date").notNull(),
     setByStaffId: uuid("set_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+    // Teacher "mark covered" (design/README.md Teacher > Lesson Plans "Annual overview").
+    coveredAt: timestamp("covered_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("lesson_plan_year_week_idx").on(t.madrasahId, t.year, t.weekStartDate)],
@@ -972,6 +1003,309 @@ export const staffPayrollRecord = pgTable(
   (t) => [uniqueIndex("staff_payroll_record_staff_month_idx").on(t.staffId, t.month)],
 );
 
+// Holiday Revision (design/README.md Teacher > Holiday Revision). The office sets one
+// window per class per holiday; the teacher fills a day-by-day grid across 4 strands,
+// pre-filled from what's been covered, then parents tick each day off with their child.
+export const holidayRevisionWindow = pgTable("holiday_revision_window", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  classId: uuid("class_id")
+    .notNull()
+    .references(() => klass.id, { onDelete: "cascade" }),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const holidayRevisionDay = pgTable(
+  "holiday_revision_day",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    windowId: uuid("window_id")
+      .notNull()
+      .references(() => holidayRevisionWindow.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    quranQaaidah: text("quran_qaaidah"),
+    surahMemorisation: text("surah_memorisation"),
+    islamicStudies: text("islamic_studies"),
+    duas: text("duas"),
+    notes: text("notes"),
+  },
+  (t) => [uniqueIndex("holiday_revision_day_window_date_idx").on(t.windowId, t.date)],
+);
+
+export const holidayRevisionCompletion = pgTable(
+  "holiday_revision_completion",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    dayId: uuid("day_id")
+      .notNull()
+      .references(() => holidayRevisionDay.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    signedByGuardianId: uuid("signed_by_guardian_id").references(() => guardian.id, { onDelete: "set null" }),
+  },
+  (t) => [uniqueIndex("holiday_revision_completion_day_pupil_idx").on(t.dayId, t.pupilId)],
+);
+
+// Set Work targeting (design/README.md Teacher > Set Work). Only populated when
+// homework.audience is "Selected students" — see comment on homework.audience.
+export const homeworkTarget = pgTable(
+  "homework_target",
+  {
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    homeworkId: uuid("homework_id")
+      .notNull()
+      .references(() => homework.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.homeworkId, t.pupilId] })],
+);
+
+// Absence & Leave requests (design/README.md Parent > Requests). A same-day absence
+// report vs a holiday/leave request share a table since both are "tell the office"
+// requests reviewed the same way; reportReason/holidayReason are mutually exclusive by
+// kind, enforced in the server action rather than the schema.
+export const leaveRequest = pgTable("leave_request", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" }),
+  guardianId: uuid("guardian_id").references(() => guardian.id, { onDelete: "set null" }),
+  kind: leaveRequestKindEnum("kind").notNull(),
+  reportReason: leaveReportReasonEnum("report_reason"),
+  holidayReason: leaveHolidayReasonEnum("holiday_reason"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  explanation: text("explanation"),
+  acknowledgedPolicy: boolean("acknowledged_policy").notNull().default(false),
+  status: leaveRequestStatusEnum("status").notNull().default("Pending"),
+  decidedByStaffId: uuid("decided_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Parents' Evening (design/README.md Communications "Parents' Evening" / Parent >
+// Requests). The office opens one session per date with per-teacher time slots;
+// guardians book a pupil into a slot.
+export const parentsEveningSession = pgTable("parents_evening_session", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const parentsEveningSlot = pgTable(
+  "parents_evening_slot",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => parentsEveningSession.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    time: time("time").notNull(),
+  },
+  (t) => [uniqueIndex("parents_evening_slot_session_staff_time_idx").on(t.sessionId, t.staffId, t.time)],
+);
+
+export const parentsEveningBooking = pgTable(
+  "parents_evening_booking",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    slotId: uuid("slot_id")
+      .notNull()
+      .references(() => parentsEveningSlot.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    guardianId: uuid("guardian_id").references(() => guardian.id, { onDelete: "set null" }),
+    bookedAt: timestamp("booked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("parents_evening_booking_slot_pupil_idx").on(t.slotId, t.pupilId)],
+);
+
+// Documents to Sign (design/README.md Parent > Fees & documents). Distinct from Forms &
+// Consent (household-level, deadline-counted): a document needs one guardian's signature,
+// no deadline. No document text is stored — title/description only, same "don't fabricate
+// authoritative content" rule as policy.
+export const signDocument = pgTable("document", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentGuardianSignature = pgTable(
+  "document_guardian_signature",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => signDocument.id, { onDelete: "cascade" }),
+    guardianId: uuid("guardian_id")
+      .notNull()
+      .references(() => guardian.id, { onDelete: "cascade" }),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("document_guardian_signature_document_guardian_idx").on(t.documentId, t.guardianId)],
+);
+
+// Guardian-side policy acknowledgement (design/README.md Parent > Documents to Sign
+// "School policy acknowledgements"), parallel to policyStaffAck above — now buildable
+// because the provisional guardian viewer (lib/session.ts) gives an ack something to
+// attribute to (see the comment on `policy` — this was the blocker).
+export const policyGuardianAck = pgTable(
+  "policy_guardian_ack",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    guardianId: uuid("guardian_id")
+      .notNull()
+      .references(() => guardian.id, { onDelete: "cascade" }),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("policy_guardian_ack_policy_guardian_idx").on(t.policyId, t.guardianId)],
+);
+
+// Hifz programme (design/README.md "Hifz programme"). One row per Sabaq/Sabqi/Manzil
+// heard. mistakeNotes is free text, not a fixed category list — the prototype's own
+// "mistake categories" vocabulary was never observed (Hifz Diary is hifz-staff gated and
+// inaccessible from any of the four named demo accounts), so nothing is invented here.
+export const hifzRecord = pgTable("hifz_record", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" }),
+  classId: uuid("class_id").references(() => klass.id, { onDelete: "set null" }),
+  date: date("date").notNull(),
+  type: hifzRecordTypeEnum("type").notNull(),
+  juz: integer("juz").notNull(),
+  pageFrom: integer("page_from"),
+  pageTo: integer("page_to"),
+  quality: hifzQualityEnum("quality").notNull(),
+  mistakeNotes: text("mistake_notes"),
+  recordedByStaffId: uuid("recorded_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Pre-Hifz & Consolidation gate (design/README.md "Pre-Hifz entry gates: reading
+// assessment, tajwīd assessment, behaviour assessment, pupil interview, parent
+// interview"). A pupil clears the gate once every date field is set.
+export const preHifzAssessment = pgTable("pre_hifz_assessment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" })
+    .unique(),
+  readingAssessmentAt: date("reading_assessment_at"),
+  tajwidAssessmentAt: date("tajwid_assessment_at"),
+  behaviourAssessmentAt: date("behaviour_assessment_at"),
+  pupilInterviewAt: date("pupil_interview_at"),
+  parentInterviewAt: date("parent_interview_at"),
+  notes: text("notes"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Reports & Examinations (design/README.md "Reports & Assessment"). Grade is a manually
+// entered label, not derived — this app doesn't know the madrasah's grading policy, so
+// it isn't invented; office types the same grade they'd write on paper.
+export const report = pgTable(
+  "report",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    termId: uuid("term_id")
+      .notNull()
+      .references(() => term.id, { onDelete: "cascade" }),
+    summary: text("summary"),
+    status: reportStatusEnum("status").notNull().default("Draft"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("report_pupil_term_idx").on(t.pupilId, t.termId)],
+);
+
+export const examination = pgTable("examination", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  termId: uuid("term_id").references(() => term.id, { onDelete: "set null" }),
+  examDate: date("exam_date"),
+  maxScore: integer("max_score").notNull().default(100),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const examResult = pgTable(
+  "exam_result",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    examinationId: uuid("examination_id")
+      .notNull()
+      .references(() => examination.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    grade: text("grade"),
+  },
+  (t) => [uniqueIndex("exam_result_examination_pupil_idx").on(t.examinationId, t.pupilId)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
   riskRegisterEntriesOwned: many(riskRegisterEntry),
@@ -981,6 +1315,8 @@ export const staffRelations = relations(staff, ({ many }) => ({
   messages: many(message),
   clockEvents: many(staffClockEvent),
   payrollRecords: many(staffPayrollRecord),
+  hifzRecordsRecorded: many(hifzRecord),
+  parentsEveningSlots: many(parentsEveningSlot),
 }));
 
 export const staffClockEventRelations = relations(staffClockEvent, ({ one }) => ({
@@ -1012,6 +1348,10 @@ export const guardianRelations = relations(guardian, ({ one, many }) => ({
   pupilLinks: many(pupilGuardian),
   messages: many(message),
   complaints: many(complaint),
+  leaveRequests: many(leaveRequest),
+  parentsEveningBookings: many(parentsEveningBooking),
+  documentSignatures: many(documentGuardianSignature),
+  policyAcks: many(policyGuardianAck),
 }));
 
 export const pupilRelations = relations(pupil, ({ one, many }) => ({
@@ -1030,6 +1370,10 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   inventoryIssues: many(inventoryIssue),
   firstAidLogEntries: many(firstAidLogEntry),
   complaints: many(complaint),
+  leaveRequests: many(leaveRequest),
+  hifzRecords: many(hifzRecord),
+  reports: many(report),
+  examResults: many(examResult),
 }));
 
 export const calendarSetRelations = relations(calendarSet, ({ many }) => ({
@@ -1100,6 +1444,7 @@ export const riskRegisterEntryRelations = relations(riskRegisterEntry, ({ one })
 
 export const policyRelations = relations(policy, ({ many }) => ({
   acks: many(policyStaffAck),
+  guardianAcks: many(policyGuardianAck),
 }));
 
 export const policyStaffAckRelations = relations(policyStaffAck, ({ one }) => ({
@@ -1203,4 +1548,86 @@ export const safarQaaidahItemRelations = relations(safarQaaidahItem, ({ one, man
 export const safarQaaidahPupilStatusRelations = relations(safarQaaidahPupilStatus, ({ one }) => ({
   pupil: one(pupil, { fields: [safarQaaidahPupilStatus.pupilId], references: [pupil.id] }),
   item: one(safarQaaidahItem, { fields: [safarQaaidahPupilStatus.itemId], references: [safarQaaidahItem.id] }),
+}));
+
+export const holidayRevisionWindowRelations = relations(holidayRevisionWindow, ({ one, many }) => ({
+  class: one(klass, { fields: [holidayRevisionWindow.classId], references: [klass.id] }),
+  days: many(holidayRevisionDay),
+}));
+
+export const holidayRevisionDayRelations = relations(holidayRevisionDay, ({ one, many }) => ({
+  window: one(holidayRevisionWindow, { fields: [holidayRevisionDay.windowId], references: [holidayRevisionWindow.id] }),
+  completions: many(holidayRevisionCompletion),
+}));
+
+export const holidayRevisionCompletionRelations = relations(holidayRevisionCompletion, ({ one }) => ({
+  day: one(holidayRevisionDay, { fields: [holidayRevisionCompletion.dayId], references: [holidayRevisionDay.id] }),
+  pupil: one(pupil, { fields: [holidayRevisionCompletion.pupilId], references: [pupil.id] }),
+  signedByGuardian: one(guardian, { fields: [holidayRevisionCompletion.signedByGuardianId], references: [guardian.id] }),
+}));
+
+export const homeworkTargetRelations = relations(homeworkTarget, ({ one }) => ({
+  homework: one(homework, { fields: [homeworkTarget.homeworkId], references: [homework.id] }),
+  pupil: one(pupil, { fields: [homeworkTarget.pupilId], references: [pupil.id] }),
+}));
+
+export const leaveRequestRelations = relations(leaveRequest, ({ one }) => ({
+  pupil: one(pupil, { fields: [leaveRequest.pupilId], references: [pupil.id] }),
+  guardian: one(guardian, { fields: [leaveRequest.guardianId], references: [guardian.id] }),
+  decidedBy: one(staff, { fields: [leaveRequest.decidedByStaffId], references: [staff.id] }),
+}));
+
+export const parentsEveningSessionRelations = relations(parentsEveningSession, ({ many }) => ({
+  slots: many(parentsEveningSlot),
+}));
+
+export const parentsEveningSlotRelations = relations(parentsEveningSlot, ({ one, many }) => ({
+  session: one(parentsEveningSession, { fields: [parentsEveningSlot.sessionId], references: [parentsEveningSession.id] }),
+  staff: one(staff, { fields: [parentsEveningSlot.staffId], references: [staff.id] }),
+  bookings: many(parentsEveningBooking),
+}));
+
+export const parentsEveningBookingRelations = relations(parentsEveningBooking, ({ one }) => ({
+  slot: one(parentsEveningSlot, { fields: [parentsEveningBooking.slotId], references: [parentsEveningSlot.id] }),
+  pupil: one(pupil, { fields: [parentsEveningBooking.pupilId], references: [pupil.id] }),
+  guardian: one(guardian, { fields: [parentsEveningBooking.guardianId], references: [guardian.id] }),
+}));
+
+export const documentRelations = relations(signDocument, ({ many }) => ({
+  signatures: many(documentGuardianSignature),
+}));
+
+export const documentGuardianSignatureRelations = relations(documentGuardianSignature, ({ one }) => ({
+  document: one(signDocument, { fields: [documentGuardianSignature.documentId], references: [signDocument.id] }),
+  guardian: one(guardian, { fields: [documentGuardianSignature.guardianId], references: [guardian.id] }),
+}));
+
+export const policyGuardianAckRelations = relations(policyGuardianAck, ({ one }) => ({
+  policy: one(policy, { fields: [policyGuardianAck.policyId], references: [policy.id] }),
+  guardian: one(guardian, { fields: [policyGuardianAck.guardianId], references: [guardian.id] }),
+}));
+
+export const hifzRecordRelations = relations(hifzRecord, ({ one }) => ({
+  pupil: one(pupil, { fields: [hifzRecord.pupilId], references: [pupil.id] }),
+  class: one(klass, { fields: [hifzRecord.classId], references: [klass.id] }),
+  recordedBy: one(staff, { fields: [hifzRecord.recordedByStaffId], references: [staff.id] }),
+}));
+
+export const preHifzAssessmentRelations = relations(preHifzAssessment, ({ one }) => ({
+  pupil: one(pupil, { fields: [preHifzAssessment.pupilId], references: [pupil.id] }),
+}));
+
+export const reportRelations = relations(report, ({ one }) => ({
+  pupil: one(pupil, { fields: [report.pupilId], references: [pupil.id] }),
+  term: one(term, { fields: [report.termId], references: [term.id] }),
+}));
+
+export const examinationRelations = relations(examination, ({ one, many }) => ({
+  term: one(term, { fields: [examination.termId], references: [term.id] }),
+  results: many(examResult),
+}));
+
+export const examResultRelations = relations(examResult, ({ one }) => ({
+  examination: one(examination, { fields: [examResult.examinationId], references: [examination.id] }),
+  pupil: one(pupil, { fields: [examResult.pupilId], references: [pupil.id] }),
 }));

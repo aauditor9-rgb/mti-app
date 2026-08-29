@@ -36,6 +36,8 @@ export async function sendMessage(formData: FormData) {
   });
 
   revalidatePath("/communications/messages");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/parent", "layout");
   return { ok: true };
 }
 
@@ -47,5 +49,7 @@ export async function markMessageRead(messageId: string) {
     .where(and(eq(message.id, messageId), eq(message.madrasahId, madrasah.id)));
 
   revalidatePath("/communications/messages");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/parent", "layout");
   return { ok: true };
 }

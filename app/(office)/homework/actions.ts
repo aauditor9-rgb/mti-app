@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { homework, homeworkSubmission, klass, pupil } from "@/lib/db/schema";
+import { homework, homeworkAudienceEnum, homeworkSubmission, homeworkTarget, klass, pupil } from "@/lib/db/schema";
 import { getMadrasah } from "@/lib/db/queries";
 
 export async function setHomework(formData: FormData) {
@@ -12,9 +12,19 @@ export async function setHomework(formData: FormData) {
   const task = String(formData.get("task") ?? "").trim();
   const dueDate = String(formData.get("dueDate") ?? "");
   const setByStaffId = String(formData.get("setByStaffId") ?? "") || null;
+  const audienceRaw = String(formData.get("audience") ?? "Whole class");
+  const audience = homeworkAudienceEnum.enumValues.includes(
+    audienceRaw as (typeof homeworkAudienceEnum.enumValues)[number],
+  )
+    ? (audienceRaw as (typeof homeworkAudienceEnum.enumValues)[number])
+    : "Whole class";
+  const selectedPupilIds = formData.getAll("pupilIds").map(String).filter(Boolean);
 
   if (!classId || !subject || !task || !dueDate) {
     return { ok: false, message: "Fill in the class, subject, task and due date." };
+  }
+  if (audience === "Selected students" && selectedPupilIds.length === 0) {
+    return { ok: false, message: "Choose at least one student, or switch to whole class." };
   }
 
   const madrasah = await getMadrasah();
@@ -25,13 +35,27 @@ export async function setHomework(formData: FormData) {
 
   const [row] = await db
     .insert(homework)
-    .values({ madrasahId: madrasah.id, classId, subject, task, dueDate, setByStaffId })
+    .values({ madrasahId: madrasah.id, classId, subject, task, dueDate, setByStaffId, audience })
     .returning();
 
   const classPupils = await db.select().from(pupil).where(eq(pupil.classId, classId));
-  if (classPupils.length > 0) {
+  const targetPupils =
+    audience === "Selected students"
+      ? classPupils.filter((p) => selectedPupilIds.includes(p.id))
+      : classPupils;
+
+  if (targetPupils.length > 0) {
     await db.insert(homeworkSubmission).values(
-      classPupils.map((p) => ({
+      targetPupils.map((p) => ({
+        madrasahId: madrasah.id,
+        homeworkId: row.id,
+        pupilId: p.id,
+      })),
+    );
+  }
+  if (audience === "Selected students" && targetPupils.length > 0) {
+    await db.insert(homeworkTarget).values(
+      targetPupils.map((p) => ({
         madrasahId: madrasah.id,
         homeworkId: row.id,
         pupilId: p.id,
@@ -40,6 +64,8 @@ export async function setHomework(formData: FormData) {
   }
 
   revalidatePath("/homework");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/parent", "layout");
   return { ok: true };
 }
 
@@ -59,5 +85,6 @@ export async function toggleSubmission(submissionId: string, completed: boolean)
 
   revalidatePath("/homework");
   revalidatePath(`/homework/${row.homeworkId}`);
+  revalidatePath("/parent", "layout");
   return { ok: true };
 }

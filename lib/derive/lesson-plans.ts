@@ -62,6 +62,41 @@ export function mondayFromIsoWeekValue(weekValue: string): string {
   return target.toISOString().slice(0, 10);
 }
 
+// The 52 consecutive Monday week-starts of an academic year, from its first Monday
+// (design/README.md Teacher > Lesson Plans "Annual overview" — a full year at a glance).
+export function academicYearWeekStarts(startDate: string, count = 52): string[] {
+  const [y, m, d] = startDate.split("-").map(Number);
+  const start = new Date(Date.UTC(y, m - 1, d));
+  return Array.from({ length: count }, (_, i) => {
+    const date = new Date(start);
+    date.setUTCDate(start.getUTCDate() + i * 7);
+    return date.toISOString().slice(0, 10);
+  });
+}
+
+// Year 1's non-teaching weeks (design/README.md Teacher > Lesson Plans "Annual
+// overview") — holidays and breaks, verbatim from the prototype's own week labels.
+// Kept out of lesson_plan_entry (a break isn't a subject taught) and shown here instead,
+// so "N of 52 teaching weeks covered" only counts weeks with real content.
+export const YEAR1_BREAK_LABELS: Record<string, string> = {
+  "2025-10-27": "Half Term",
+  "2025-12-22": "End of Term",
+  "2025-12-29": "End of Term",
+  "2026-02-16": "Ramadan Break",
+  "2026-02-23": "Ramadan Break",
+  "2026-03-02": "Ramadan Break",
+  "2026-03-09": "Ramadan Break",
+  "2026-03-16": "Ramadan Break",
+  "2026-04-06": "Term Break",
+  "2026-05-25": "Eid-ul-Adha Break",
+  "2026-07-20": "End of Year Break",
+  "2026-07-27": "End of Year Break",
+  "2026-08-03": "End of Year Break",
+  "2026-08-10": "End of Year Break",
+  "2026-08-17": "End of Year Break",
+  "2026-08-24": "End of Year Break",
+};
+
 export function formatWeekLabel(mondayDate: string): string {
   const d = new Date(`${mondayDate}T00:00:00Z`);
   return `Week of ${new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" }).format(d)}`;

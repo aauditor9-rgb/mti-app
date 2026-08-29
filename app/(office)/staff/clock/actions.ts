@@ -23,6 +23,7 @@ export async function clockIn(staffId: string) {
 
   await db.insert(staffClockEvent).values({ madrasahId: madrasahRow.id, staffId, clockedInAt: new Date() });
   revalidatePath("/staff/clock");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -43,6 +44,7 @@ export async function clockOut(staffId: string) {
 
   await db.update(staffClockEvent).set({ clockedOutAt: new Date() }).where(eq(staffClockEvent.id, open.id));
   revalidatePath("/staff/clock");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -61,5 +63,6 @@ export async function updateClockSettings(formData: FormData) {
     .where(eq(madrasah.id, madrasahRow.id));
 
   revalidatePath("/staff/clock");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }

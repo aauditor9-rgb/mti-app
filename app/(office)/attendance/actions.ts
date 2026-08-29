@@ -51,6 +51,7 @@ export async function setAttendanceMark(
 
   revalidatePath(`/attendance/${classId}`);
   revalidatePath("/attendance");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -85,6 +86,7 @@ export async function submitRegister(classId: string, date: string) {
 
   revalidatePath(`/attendance/${classId}`);
   revalidatePath("/attendance");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -97,5 +99,6 @@ export async function reopenRegister(classId: string, date: string) {
 
   revalidatePath(`/attendance/${classId}`);
   revalidatePath("/attendance");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }

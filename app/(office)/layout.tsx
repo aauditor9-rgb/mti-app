@@ -29,10 +29,9 @@ import {
   Stethoscope,
   Users,
 } from "lucide-react";
+import { ClipboardCheck, FileSignature, UserCheck } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { getMadrasah } from "@/lib/db/queries";
-
-const STATIC_GROUPS = ["Reports & Assessment"];
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
@@ -113,6 +112,9 @@ export default async function OfficeLayout({ children }: { children: React.React
               <OfficeNavLink href="/attendance" icon={<CalendarCheck className="size-4" />}>
                 Attendance
               </OfficeNavLink>
+              <OfficeNavLink href="/attendance/leave-requests" icon={<ClipboardCheck className="size-4" />}>
+                Leave Requests
+              </OfficeNavLink>
               <OfficeNavLink href="/ihsan" icon={<Sparkles className="size-4" />}>
                 Iḥsān Points
               </OfficeNavLink>
@@ -148,6 +150,9 @@ export default async function OfficeLayout({ children }: { children: React.React
               <OfficeNavLink href="/progress-trackers/knowledge-passport" icon={<IdCard className="size-4" />}>
                 Knowledge Passport
               </OfficeNavLink>
+              <OfficeNavLink href="/hifz" icon={<Moon className="size-4" />}>
+                Hifz Programme
+              </OfficeNavLink>
             </div>
           </div>
 
@@ -176,8 +181,14 @@ export default async function OfficeLayout({ children }: { children: React.React
               <OfficeNavLink href="/communications/events" icon={<PartyPopper className="size-4" />}>
                 Events &amp; Jalsas
               </OfficeNavLink>
+              <OfficeNavLink href="/communications/parents-evening" icon={<UserCheck className="size-4" />}>
+                Parents&apos; Evening
+              </OfficeNavLink>
               <OfficeNavLink href="/communications/forms" icon={<FileCheck2 className="size-4" />}>
                 Forms &amp; Consent
+              </OfficeNavLink>
+              <OfficeNavLink href="/communications/documents" icon={<FileSignature className="size-4" />}>
+                Documents
               </OfficeNavLink>
               <OfficeNavLink href="/communications/complaints" icon={<MessageCircleWarning className="size-4" />}>
                 Complaints
@@ -213,14 +224,19 @@ export default async function OfficeLayout({ children }: { children: React.React
             </div>
           </div>
 
-          {STATIC_GROUPS.map((group) => (
-            <p
-              key={group}
-              className="px-2.5 text-tiny font-medium tracking-wide text-[var(--muted-2)] uppercase"
-            >
-              {group}
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Reports &amp; Assessment
             </p>
-          ))}
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/reports" icon={<GraduationCap className="size-4" />}>
+                Reports
+              </OfficeNavLink>
+              <OfficeNavLink href="/examinations" icon={<ClipboardList className="size-4" />}>
+                Examinations
+              </OfficeNavLink>
+            </div>
+          </div>
         </nav>
       </aside>
 

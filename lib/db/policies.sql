@@ -274,3 +274,100 @@ drop policy if exists tenant_isolation on staff_payroll_record;
 create policy tenant_isolation on staff_payroll_record
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+-- Teacher/Parent/Pupil portal tables.
+alter table holiday_revision_window enable row level security;
+drop policy if exists tenant_isolation on holiday_revision_window;
+create policy tenant_isolation on holiday_revision_window
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table holiday_revision_day enable row level security;
+drop policy if exists tenant_isolation on holiday_revision_day;
+create policy tenant_isolation on holiday_revision_day
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table holiday_revision_completion enable row level security;
+drop policy if exists tenant_isolation on holiday_revision_completion;
+create policy tenant_isolation on holiday_revision_completion
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table homework_target enable row level security;
+drop policy if exists tenant_isolation on homework_target;
+create policy tenant_isolation on homework_target
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table leave_request enable row level security;
+drop policy if exists tenant_isolation on leave_request;
+create policy tenant_isolation on leave_request
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table parents_evening_session enable row level security;
+drop policy if exists tenant_isolation on parents_evening_session;
+create policy tenant_isolation on parents_evening_session
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table parents_evening_slot enable row level security;
+drop policy if exists tenant_isolation on parents_evening_slot;
+create policy tenant_isolation on parents_evening_slot
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table parents_evening_booking enable row level security;
+drop policy if exists tenant_isolation on parents_evening_booking;
+create policy tenant_isolation on parents_evening_booking
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table document enable row level security;
+drop policy if exists tenant_isolation on document;
+create policy tenant_isolation on document
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table document_guardian_signature enable row level security;
+drop policy if exists tenant_isolation on document_guardian_signature;
+create policy tenant_isolation on document_guardian_signature
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table policy_guardian_ack enable row level security;
+drop policy if exists tenant_isolation on policy_guardian_ack;
+create policy tenant_isolation on policy_guardian_ack
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table hifz_record enable row level security;
+drop policy if exists tenant_isolation on hifz_record;
+create policy tenant_isolation on hifz_record
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table pre_hifz_assessment enable row level security;
+drop policy if exists tenant_isolation on pre_hifz_assessment;
+create policy tenant_isolation on pre_hifz_assessment
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table report enable row level security;
+drop policy if exists tenant_isolation on report;
+create policy tenant_isolation on report
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table examination enable row level security;
+drop policy if exists tenant_isolation on examination;
+create policy tenant_isolation on examination
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table exam_result enable row level security;
+drop policy if exists tenant_isolation on exam_result;
+create policy tenant_isolation on exam_result
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

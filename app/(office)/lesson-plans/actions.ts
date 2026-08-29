@@ -65,6 +65,23 @@ export async function setLessonPlanEntry(formData: FormData) {
     });
 
   revalidatePath("/lesson-plans");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/parent", "layout");
+  return { ok: true };
+}
+
+export async function toggleLessonPlanCovered(planId: string, covered: boolean) {
+  const madrasah = await getMadrasah();
+  const [row] = await db.select().from(lessonPlan).where(eq(lessonPlan.id, planId)).limit(1);
+  if (!row || row.madrasahId !== madrasah.id) throw new Error("Lesson plan not found");
+
+  await db
+    .update(lessonPlan)
+    .set({ coveredAt: covered ? new Date() : null })
+    .where(eq(lessonPlan.id, planId));
+
+  revalidatePath("/lesson-plans");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 

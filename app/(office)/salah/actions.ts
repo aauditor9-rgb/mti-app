@@ -35,6 +35,7 @@ export async function logSalahDay(formData: FormData) {
   }
 
   revalidatePath("/salah");
+  revalidatePath("/pupil/muhasabah");
   return { ok: true };
 }
 

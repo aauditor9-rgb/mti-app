@@ -13,46 +13,64 @@ import {
   calendarSet,
   complaint,
   concern,
+  documentGuardianSignature,
   duaCatalogItem,
   duaPupilStatus,
   event,
+  examination,
+  examResult,
   feeInvoiceLine,
   feePayment,
   firstAidLogEntry,
   formResponse,
   formTemplate,
+  guardian,
+  hifzRecord,
+  holidayRevisionDay,
+  holidayRevisionWindow,
   homework,
+  homeworkSubmission,
   ihsanAward,
   ihsanLedger,
   inventoryIssue,
   inventoryItem,
   klass,
+  leaveRequest,
   lessonPlan,
   madrasah,
   message,
+  parentsEveningSession,
   policy,
+  policyGuardianAck,
+  preHifzAssessment,
   pupil,
+  pupilGuardian,
   registerSubmission,
+  report,
   riskRegisterEntry,
   safarQaaidahLevel,
   safarQaaidahPupilStatus,
   salahLog,
+  signDocument,
   staff,
   staffClockEvent,
   staffPayrollRecord,
   surahCatalogItem,
   surahPupilStatus,
   task,
+  term,
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
 import { computeHomeworkProgress } from "@/lib/derive/homework";
-import { LESSON_PLAN_YEARS } from "@/lib/derive/lesson-plans";
+import { LESSON_PLAN_YEARS, mondayOfDate } from "@/lib/derive/lesson-plans";
+import { todayLondon } from "@/lib/derive/age";
 import { computeAdherence, last7Days } from "@/lib/derive/salah";
 import { computeHouseholdFeeSummary } from "@/lib/derive/fees";
 import { computeTaskStatus } from "@/lib/derive/tasks";
 import { computeClockStatus } from "@/lib/derive/staff";
 import type { AdmissionYear } from "@/lib/derive/admissions";
+import { getViewerGuardianId, getViewerPupilId, getViewerStaffId } from "@/lib/session";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -693,4 +711,362 @@ export async function listPayrollForMonth(madrasahId: string, month: string) {
     const record = records.find((r) => r.staffId === s.id);
     return { staff: s, paid: record?.paid ?? false, recordId: record?.id ?? null };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Provisional viewer session (Teacher/Parent/Pupil portals) — see lib/session.ts.
+// No real auth: any staff/guardian with portal access can be "picked" like the
+// prototype's own demo account list.
+// ---------------------------------------------------------------------------
+
+export async function listPortalStaff(madrasahId: string) {
+  return db.query.staff.findMany({
+    where: and(eq(staff.madrasahId, madrasahId), eq(staff.portalAccess, true)),
+    orderBy: asc(staff.name),
+  });
+}
+
+export async function getCurrentStaff(madrasahId: string) {
+  const staffId = await getViewerStaffId();
+  if (!staffId) return null;
+  const row = await db.query.staff.findFirst({
+    where: eq(staff.id, staffId),
+    with: { classesLed: true },
+  });
+  if (!row || row.madrasahId !== madrasahId || !row.portalAccess) return null;
+  return row;
+}
+
+export async function listPortalGuardians(madrasahId: string) {
+  const rows = await db.query.guardian.findMany({
+    where: eq(guardian.madrasahId, madrasahId),
+    orderBy: asc(guardian.name),
+    with: { pupilLinks: { with: { pupil: true } } },
+  });
+  return rows.filter((g) => g.pupilLinks.length > 0);
+}
+
+export async function getCurrentGuardian(madrasahId: string) {
+  const guardianId = await getViewerGuardianId();
+  if (!guardianId) return null;
+  const row = await db.query.guardian.findFirst({ where: eq(guardian.id, guardianId) });
+  if (!row || row.madrasahId !== madrasahId) return null;
+
+  const links = await db.query.pupilGuardian.findMany({ where: eq(pupilGuardian.guardianId, guardianId) });
+  const pupils = await listPupils(madrasahId);
+  const pupilById = new Map(pupils.map((p) => [p.id, p]));
+  const children = links
+    .map((l) => pupilById.get(l.pupilId))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+
+  return { ...row, children };
+}
+
+export async function getCurrentPupilFromCookie(madrasahId: string) {
+  const pupilId = await getViewerPupilId();
+  if (!pupilId) return null;
+  const pupils = await listPupils(madrasahId);
+  return pupils.find((p) => p.id === pupilId) ?? null;
+}
+
+export async function listDocumentsWithSignatureCounts(madrasahId: string) {
+  const [docs, guardians] = await Promise.all([
+    db.query.signDocument.findMany({
+      where: eq(signDocument.madrasahId, madrasahId),
+      orderBy: asc(signDocument.title),
+      with: { signatures: true },
+    }),
+    listPortalGuardians(madrasahId),
+  ]);
+  return docs.map((d) => ({
+    ...d,
+    signedCount: d.signatures.filter((s) => s.signedAt).length,
+    totalGuardians: guardians.length,
+  }));
+}
+
+export async function getHouseholdFeeSummaryForPupil(madrasahId: string, pupilId: string) {
+  const pupils = await listPupils(madrasahId);
+  const pupilRow = pupils.find((p) => p.id === pupilId);
+  if (!pupilRow?.householdId) return null;
+  const summaries = await listHouseholdFeeSummaries(madrasahId);
+  return summaries.find((s) => s.householdId === pupilRow.householdId) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Teacher portal
+// ---------------------------------------------------------------------------
+
+// The classes this member of staff leads (design/README.md Teacher "My Register",
+// "My Students"). A staff row currently leads at most one class in this schema
+// (klass.leadTeacherId), but the portal is written against a list in case that
+// changes — see design/README.md's own note that some staff teach more than one group.
+export async function getTeacherClasses(madrasahId: string, staffId: string) {
+  return db.query.klass.findMany({
+    where: and(eq(klass.madrasahId, madrasahId), eq(klass.leadTeacherId, staffId)),
+    orderBy: asc(klass.name),
+    with: { pupils: true },
+  });
+}
+
+export async function getTeacherLessonPlan(madrasahId: string, year: AdmissionYear, weekStartDate: string) {
+  return db.query.lessonPlan.findFirst({
+    where: and(eq(lessonPlan.madrasahId, madrasahId), eq(lessonPlan.year, year), eq(lessonPlan.weekStartDate, weekStartDate)),
+    with: { entries: true, setBy: true },
+  });
+}
+
+// All 52 weeks of the academic year for a year band, planned or not — the Teacher >
+// Lesson Plans "Annual overview" (design/README.md). weekStartDates is generated by
+// lib/derive/lesson-plans.ts's academicYearMonths-style walk, passed in by the caller.
+export async function listHifzRecordsForClass(madrasahId: string, classId: string, limit = 30) {
+  return db.query.hifzRecord.findMany({
+    where: and(eq(hifzRecord.madrasahId, madrasahId), eq(hifzRecord.classId, classId)),
+    orderBy: [desc(hifzRecord.date), desc(hifzRecord.createdAt)],
+    with: { pupil: true, recordedBy: true },
+    limit,
+  });
+}
+
+export async function listHifzRecordsForPupil(pupilId: string, limit = 60) {
+  return db.query.hifzRecord.findMany({
+    where: eq(hifzRecord.pupilId, pupilId),
+    orderBy: [desc(hifzRecord.date), desc(hifzRecord.createdAt)],
+    limit,
+  });
+}
+
+export async function getHolidayRevisionWindow(madrasahId: string, classId: string) {
+  return db.query.holidayRevisionWindow.findFirst({
+    where: and(eq(holidayRevisionWindow.madrasahId, madrasahId), eq(holidayRevisionWindow.classId, classId)),
+    orderBy: desc(holidayRevisionWindow.startDate),
+    with: { days: { orderBy: asc(holidayRevisionDay.date), with: { completions: true } } },
+  });
+}
+
+export async function getStaffClockEvents(staffId: string) {
+  return db.select().from(staffClockEvent).where(eq(staffClockEvent.staffId, staffId)).orderBy(desc(staffClockEvent.clockedInAt));
+}
+
+export async function listTeacherAnnualPlan(madrasahId: string, year: AdmissionYear, weekStartDates: string[]) {
+  const plans = await db.query.lessonPlan.findMany({
+    where: and(eq(lessonPlan.madrasahId, madrasahId), eq(lessonPlan.year, year)),
+    with: { entries: true },
+  });
+  const byWeek = new Map(plans.map((p) => [p.weekStartDate, p]));
+  return weekStartDates.map((weekStartDate) => ({ weekStartDate, plan: byWeek.get(weekStartDate) ?? null }));
+}
+
+// ---------------------------------------------------------------------------
+// Parent portal
+// ---------------------------------------------------------------------------
+
+// Attendance % and lateness this term, computed live from attendance_mark — never
+// stored (invariant 1). "This term" = the pupil's calendar's current term if one
+// covers today, else all marks on record.
+export async function getPupilAttendanceSummary(madrasahId: string, pupilId: string) {
+  const marks = await db
+    .select()
+    .from(attendanceMark)
+    .where(and(eq(attendanceMark.madrasahId, madrasahId), eq(attendanceMark.pupilId, pupilId)));
+  if (marks.length === 0) return { attendancePct: 100, lateCount: 0, sessionCount: 0 };
+
+  const presentOrLate = marks.filter((m) => m.code === "P" || m.code === "L").length;
+  const lateCount = marks.filter((m) => m.code === "L").length;
+  return {
+    attendancePct: Math.round((presentOrLate / marks.length) * 100),
+    lateCount,
+    sessionCount: marks.length,
+  };
+}
+
+export async function countHomeworkDueThisWeek(madrasahId: string, pupilId: string) {
+  const today = todayLondon();
+  const monday = mondayOfDate(today);
+  const sunday = new Date(`${monday}T00:00:00Z`);
+  sunday.setUTCDate(sunday.getUTCDate() + 6);
+  const sundayStr = sunday.toISOString().slice(0, 10);
+
+  const rows = await db.query.homeworkSubmission.findMany({
+    where: eq(homeworkSubmission.pupilId, pupilId),
+    with: { homework: true },
+  });
+  return rows.filter((r) => r.homework.madrasahId === madrasahId && r.homework.dueDate >= monday && r.homework.dueDate <= sundayStr).length;
+}
+
+export async function getParentHomeworkList(madrasahId: string, pupilId: string) {
+  const rows = await db.query.homeworkSubmission.findMany({
+    where: eq(homeworkSubmission.pupilId, pupilId),
+    with: { homework: { with: { setBy: true } } },
+    orderBy: desc(homeworkSubmission.id),
+  });
+  return rows
+    .filter((r) => r.homework.madrasahId === madrasahId)
+    .sort((a, b) => a.homework.dueDate.localeCompare(b.homework.dueDate));
+}
+
+export async function getPupilDuaTracker(madrasahId: string, pupilId: string, year: AdmissionYear) {
+  const items = await db.query.duaCatalogItem.findMany({
+    where: and(eq(duaCatalogItem.madrasahId, madrasahId), eq(duaCatalogItem.year, year)),
+    orderBy: asc(duaCatalogItem.orderIndex),
+    with: { statuses: { where: eq(duaPupilStatus.pupilId, pupilId) } },
+  });
+  return items.map((item) => ({ ...item, status: item.statuses[0] ?? null }));
+}
+
+export async function getPupilSurahTracker(madrasahId: string, pupilId: string, year: AdmissionYear) {
+  const items = await db.query.surahCatalogItem.findMany({
+    where: and(eq(surahCatalogItem.madrasahId, madrasahId), eq(surahCatalogItem.year, year)),
+    orderBy: asc(surahCatalogItem.orderIndex),
+    with: { statuses: { where: eq(surahPupilStatus.pupilId, pupilId) } },
+  });
+  return items.map((item) => ({ ...item, status: item.statuses[0] ?? null }));
+}
+
+export async function listLeaveRequestsForPupil(pupilId: string) {
+  return db.query.leaveRequest.findMany({ where: eq(leaveRequest.pupilId, pupilId), orderBy: desc(leaveRequest.createdAt) });
+}
+
+export async function listLeaveRequests(madrasahId: string) {
+  const rows = await db.query.leaveRequest.findMany({
+    where: eq(leaveRequest.madrasahId, madrasahId),
+    orderBy: desc(leaveRequest.createdAt),
+    with: { decidedBy: true },
+  });
+  const pupils = await listPupils(madrasahId);
+  const pupilById = new Map(pupils.map((p) => [p.id, p]));
+  return rows.map((r) => ({ ...r, pupil: pupilById.get(r.pupilId) ?? null }));
+}
+
+export async function listParentsEveningSessions(madrasahId: string) {
+  return db.query.parentsEveningSession.findMany({
+    where: eq(parentsEveningSession.madrasahId, madrasahId),
+    orderBy: desc(parentsEveningSession.date),
+    with: { slots: { with: { staff: true, bookings: { with: { pupil: true } } } } },
+  });
+}
+
+export async function listUpcomingParentsEveningSlots(madrasahId: string) {
+  const sessions = await db.query.parentsEveningSession.findMany({
+    where: and(eq(parentsEveningSession.madrasahId, madrasahId), gte(parentsEveningSession.date, todayLondon())),
+    orderBy: asc(parentsEveningSession.date),
+    with: { slots: { with: { staff: true, bookings: true } } },
+  });
+  return sessions;
+}
+
+export async function listDocumentsForGuardian(madrasahId: string, guardianId: string) {
+  const docs = await db.query.signDocument.findMany({
+    where: eq(signDocument.madrasahId, madrasahId),
+    orderBy: asc(signDocument.title),
+    with: { signatures: { where: eq(documentGuardianSignature.guardianId, guardianId) } },
+  });
+  return docs.map((d) => ({ ...d, signedAt: d.signatures[0]?.signedAt ?? null }));
+}
+
+export async function listPoliciesForGuardian(madrasahId: string, guardianId: string) {
+  const policies = await db.query.policy.findMany({
+    where: eq(policy.madrasahId, madrasahId),
+    orderBy: asc(policy.title),
+    with: { guardianAcks: { where: eq(policyGuardianAck.guardianId, guardianId) } },
+  });
+  return policies.map((p) => ({ ...p, acknowledgedAt: p.guardianAcks[0]?.acknowledgedAt ?? null }));
+}
+
+export async function getHifzSummaryForPupil(pupilId: string) {
+  const records = await listHifzRecordsForPupil(pupilId);
+  return records;
+}
+
+// ---------------------------------------------------------------------------
+// Hifz Programme (Office)
+// ---------------------------------------------------------------------------
+
+export async function listHifzPupils(madrasahId: string) {
+  const pupils = await listPupils(madrasahId);
+  return pupils.filter((p) => p.class?.hifdhType && p.class.hifdhType !== "None" && p.enrolmentState === "Enrolled");
+}
+
+export async function getHifzRosterMadrasah(madrasahId: string) {
+  const [pupils, records] = await Promise.all([
+    listHifzPupils(madrasahId),
+    db.select().from(hifzRecord).where(eq(hifzRecord.madrasahId, madrasahId)),
+  ]);
+  return pupils.map((p) => ({
+    pupil: p,
+    records: records.filter((r) => r.pupilId === p.id),
+  }));
+}
+
+export async function listPreHifzPupils(madrasahId: string) {
+  const pupils = await listPupils(madrasahId);
+  return pupils.filter((p) => p.class?.hifdhType === "Pre-Hifz" && p.enrolmentState === "Enrolled");
+}
+
+export async function listPreHifzAssessments(madrasahId: string) {
+  const pupils = await listPreHifzPupils(madrasahId);
+  const rows = await db.query.preHifzAssessment.findMany({
+    where: eq(preHifzAssessment.madrasahId, madrasahId),
+  });
+  const byPupil = new Map(rows.map((r) => [r.pupilId, r]));
+  return pupils.map((p) => ({ pupil: p, assessment: byPupil.get(p.id) ?? null }));
+}
+
+// ---------------------------------------------------------------------------
+// Reports & Examinations (Office)
+// ---------------------------------------------------------------------------
+
+export async function listTermsForMadrasah(madrasahId: string) {
+  return db.query.term.findMany({ where: eq(term.madrasahId, madrasahId), orderBy: asc(term.startDate) });
+}
+
+export async function listReportsForTerm(madrasahId: string, termId: string) {
+  const [pupils, reports] = await Promise.all([
+    listPupils(madrasahId),
+    db.query.report.findMany({ where: and(eq(report.madrasahId, madrasahId), eq(report.termId, termId)) }),
+  ]);
+  const byPupil = new Map(reports.map((r) => [r.pupilId, r]));
+  return pupils
+    .filter((p) => p.enrolmentState === "Enrolled")
+    .map((p) => ({ pupil: p, report: byPupil.get(p.id) ?? null }));
+}
+
+export async function listExaminations(madrasahId: string) {
+  return db.query.examination.findMany({
+    where: eq(examination.madrasahId, madrasahId),
+    orderBy: desc(examination.examDate),
+    with: { term: true, results: true },
+  });
+}
+
+export async function getExamination(madrasahId: string, examinationId: string) {
+  const row = await db.query.examination.findFirst({
+    where: eq(examination.id, examinationId),
+    with: { term: true, results: true },
+  });
+  if (!row || row.madrasahId !== madrasahId) return null;
+  const pupils = await listPupils(madrasahId);
+  const resultByPupil = new Map(row.results.map((r) => [r.pupilId, r]));
+  return {
+    ...row,
+    pupilRows: pupils
+      .filter((p) => p.enrolmentState === "Enrolled")
+      .map((p) => ({ pupil: p, result: resultByPupil.get(p.id) ?? null })),
+  };
+}
+
+export async function listPublishedReportsForPupil(pupilId: string) {
+  return db.query.report.findMany({
+    where: and(eq(report.pupilId, pupilId), eq(report.status, "Published")),
+    orderBy: desc(report.publishedAt),
+    with: { term: true },
+  });
+}
+
+export async function listExamResultsForPupil(pupilId: string) {
+  const rows = await db.query.examResult.findMany({
+    where: eq(examResult.pupilId, pupilId),
+    with: { examination: { with: { term: true } } },
+  });
+  return rows.filter((r) => r.examination.publishedAt !== null).sort((a, b) => (b.examination.examDate ?? "").localeCompare(a.examination.examDate ?? ""));
 }

@@ -28,5 +28,7 @@ export async function awardPoints(pupilId: string, awardId: string) {
   });
 
   revalidatePath("/ihsan");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/parent", "layout");
   return { ok: true };
 }

@@ -54,6 +54,7 @@ export async function logConcern(formData: FormData) {
   });
 
   revalidatePath("/concerns");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -70,6 +71,7 @@ export async function updateConcernStatus(concernId: string, status: ConcernStat
     .where(eq(concern.id, concernId));
 
   revalidatePath("/concerns");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -87,6 +89,7 @@ export async function updateConcernSeverity(concernId: string, severity: Concern
     .where(eq(concern.id, concernId));
 
   revalidatePath("/concerns");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -94,6 +97,7 @@ export async function updateConcernOwner(concernId: string, ownerStaffId: string
   await assertConcernInMadrasah(concernId);
   await db.update(concern).set({ ownerStaffId: ownerStaffId || null }).where(eq(concern.id, concernId));
   revalidatePath("/concerns");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
 
@@ -107,5 +111,6 @@ export async function notifySafeguarding(concernId: string) {
     .where(eq(concern.id, concernId));
 
   revalidatePath("/concerns");
+  revalidatePath("/teacher", "layout");
   return { ok: true };
 }
