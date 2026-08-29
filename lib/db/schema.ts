@@ -482,6 +482,51 @@ export const duaPupilStatus = pgTable(
   (t) => [uniqueIndex("dua_pupil_status_pupil_item_idx").on(t.pupilId, t.duaCatalogItemId)],
 );
 
+// Surahs Progress Tracker — same shape and same prototype gap as the du'a tracker
+// above (design/README.md "Surahs — Year 1-8, verse-by-verse, grouped by surah with
+// per-surah counts"; the office screen shows only class-wide toggles, no pupil
+// selector). verseCount is nullable: some catalog entries are partial ranges
+// ("1st 10 verses of Surah Kahf") with no single count shown in the prototype.
+// "Fully memorised" = memorised AND tajweedSound, per the prototype's own header
+// text ("fully memorised (memorisation + tajweed)") — read-at-home is tracked but
+// not part of that definition, same as translation isn't for du'as.
+export const surahCatalogItem = pgTable(
+  "surah_catalog_item",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    year: admissionYearEnum("year").notNull(),
+    name: text("name").notNull(),
+    verseCount: integer("verse_count"),
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("surah_catalog_item_year_name_idx").on(t.madrasahId, t.year, t.name)],
+);
+
+export const surahPupilStatus = pgTable(
+  "surah_pupil_status",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    surahCatalogItemId: uuid("surah_catalog_item_id")
+      .notNull()
+      .references(() => surahCatalogItem.id, { onDelete: "cascade" }),
+    memorised: boolean("memorised").notNull().default(false),
+    tajweedSound: boolean("tajweed_sound").notNull().default(false),
+    readAtHome: boolean("read_at_home").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("surah_pupil_status_pupil_item_idx").on(t.pupilId, t.surahCatalogItemId)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -514,6 +559,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   homeworkSubmissions: many(homeworkSubmission),
   salahLogs: many(salahLog),
   duaStatuses: many(duaPupilStatus),
+  surahStatuses: many(surahPupilStatus),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -589,4 +635,13 @@ export const duaCatalogItemRelations = relations(duaCatalogItem, ({ many }) => (
 export const duaPupilStatusRelations = relations(duaPupilStatus, ({ one }) => ({
   pupil: one(pupil, { fields: [duaPupilStatus.pupilId], references: [pupil.id] }),
   item: one(duaCatalogItem, { fields: [duaPupilStatus.duaCatalogItemId], references: [duaCatalogItem.id] }),
+}));
+
+export const surahCatalogItemRelations = relations(surahCatalogItem, ({ many }) => ({
+  statuses: many(surahPupilStatus),
+}));
+
+export const surahPupilStatusRelations = relations(surahPupilStatus, ({ one }) => ({
+  pupil: one(pupil, { fields: [surahPupilStatus.pupilId], references: [pupil.id] }),
+  item: one(surahCatalogItem, { fields: [surahPupilStatus.surahCatalogItemId], references: [surahCatalogItem.id] }),
 }));

@@ -22,6 +22,7 @@ import {
   registerSubmission,
   salahLog,
   staff,
+  surahCatalogItem,
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
@@ -318,6 +319,18 @@ export async function getDuaTrackerForYear(madrasahId: string, year: AdmissionYe
     db.query.duaCatalogItem.findMany({
       where: and(eq(duaCatalogItem.madrasahId, madrasahId), eq(duaCatalogItem.year, year)),
       orderBy: asc(duaCatalogItem.orderIndex),
+      with: { statuses: { with: { pupil: true } } },
+    }),
+  ]);
+  return { pupils, items };
+}
+
+export async function getSurahTrackerForYear(madrasahId: string, year: AdmissionYear) {
+  const [pupils, items] = await Promise.all([
+    listPupilsByYearBand(madrasahId, year),
+    db.query.surahCatalogItem.findMany({
+      where: and(eq(surahCatalogItem.madrasahId, madrasahId), eq(surahCatalogItem.year, year)),
+      orderBy: asc(surahCatalogItem.orderIndex),
       with: { statuses: { with: { pupil: true } } },
     }),
   ]);
