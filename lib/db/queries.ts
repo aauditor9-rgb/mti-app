@@ -11,6 +11,7 @@ import {
   applicantStageLog,
   attendanceMark,
   concern,
+  homework,
   ihsanAward,
   ihsanLedger,
   klass,
@@ -21,6 +22,7 @@ import {
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
+import { computeHomeworkProgress } from "@/lib/derive/homework";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -206,4 +208,34 @@ export async function getApplicant(madrasahId: string, applicantId: string) {
     quranLevel: row.quranLevel,
   });
   return { ...row, stageEnteredAt: stageEnteredAt.toISOString(), priority };
+}
+
+export async function listHomework(madrasahId: string) {
+  const rows = await db.query.homework.findMany({
+    where: eq(homework.madrasahId, madrasahId),
+    orderBy: desc(homework.createdAt),
+    with: { class: true, setBy: true, submissions: true },
+  });
+  return rows.map((row) => ({ ...row, progress: computeHomeworkProgress(row.submissions) }));
+}
+
+export async function getHomework(madrasahId: string, homeworkId: string) {
+  const row = await db.query.homework.findFirst({
+    where: eq(homework.id, homeworkId),
+    with: {
+      class: true,
+      setBy: true,
+      submissions: { with: { pupil: true } },
+    },
+  });
+  if (!row || row.madrasahId !== madrasahId) return null;
+
+  // Reuse listPupils so displayId stays the one derivation everywhere it's shown.
+  const pupils = await listPupils(madrasahId);
+  const pupilById = new Map(pupils.map((p) => [p.id, p]));
+  const submissions = row.submissions
+    .map((s) => ({ ...s, pupil: pupilById.get(s.pupilId) ?? null }))
+    .sort((a, b) => (a.pupil?.name ?? "").localeCompare(b.pupil?.name ?? ""));
+
+  return { ...row, submissions, progress: computeHomeworkProgress(row.submissions) };
 }

@@ -1,8 +1,8 @@
-import { CalendarCheck, ClipboardList, GraduationCap, HeartHandshake, Sparkles, Users } from "lucide-react";
+import { BookOpen, CalendarCheck, ClipboardList, GraduationCap, HeartHandshake, Sparkles, Users } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { getMadrasah } from "@/lib/db/queries";
 
-const STATIC_GROUPS = ["Overview", "Teaching & Learning", "Reports & Assessment", "Operations"];
+const STATIC_GROUPS = ["Overview", "Reports & Assessment", "Operations"];
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
@@ -62,6 +62,17 @@ export default async function OfficeLayout({ children }: { children: React.React
               </OfficeNavLink>
               <OfficeNavLink href="/concerns" icon={<HeartHandshake className="size-4" />}>
                 Concerns
+              </OfficeNavLink>
+            </div>
+          </div>
+
+          <div>
+            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
+              Teaching &amp; Learning
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <OfficeNavLink href="/homework" icon={<BookOpen className="size-4" />}>
+                Homework
               </OfficeNavLink>
             </div>
           </div>

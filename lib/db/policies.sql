@@ -88,3 +88,15 @@ drop policy if exists tenant_isolation on applicant_stage_log;
 create policy tenant_isolation on applicant_stage_log
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table homework enable row level security;
+drop policy if exists tenant_isolation on homework;
+create policy tenant_isolation on homework
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table homework_submission enable row level security;
+drop policy if exists tenant_isolation on homework_submission;
+create policy tenant_isolation on homework_submission
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

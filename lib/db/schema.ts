@@ -317,6 +317,45 @@ export const applicantStageLog = pgTable("applicant_stage_log", {
   changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Homework (design/README.md's set-work → publish → review flow). Set for a whole
+// class — the prototype's per-student subset targeting is deferred, see
+// lib/derive/homework.ts. One submission row per pupil is created when the homework
+// is set, so "% acknowledged" is always a live count over real rows, never a stored
+// percentage like the prototype's static submittedPct (invariant 1).
+export const homework = pgTable("homework", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  classId: uuid("class_id")
+    .notNull()
+    .references(() => klass.id, { onDelete: "cascade" }),
+  subject: text("subject").notNull(),
+  task: text("task").notNull(),
+  dueDate: date("due_date").notNull(),
+  setByStaffId: uuid("set_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const homeworkSubmission = pgTable(
+  "homework_submission",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    homeworkId: uuid("homework_id")
+      .notNull()
+      .references(() => homework.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    completed: boolean("completed").notNull().default(false),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("homework_submission_homework_pupil_idx").on(t.homeworkId, t.pupilId)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -346,6 +385,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   attendanceMarks: many(attendanceMark),
   ihsanLedgerRows: many(ihsanLedger),
   concerns: many(concern),
+  homeworkSubmissions: many(homeworkSubmission),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -384,6 +424,17 @@ export const applicantRelations = relations(applicant, ({ one, many }) => ({
   class: one(klass, { fields: [applicant.classId], references: [klass.id] }),
   enrolledPupil: one(pupil, { fields: [applicant.enrolledPupilId], references: [pupil.id] }),
   stageLog: many(applicantStageLog),
+}));
+
+export const homeworkRelations = relations(homework, ({ one, many }) => ({
+  class: one(klass, { fields: [homework.classId], references: [klass.id] }),
+  setBy: one(staff, { fields: [homework.setByStaffId], references: [staff.id] }),
+  submissions: many(homeworkSubmission),
+}));
+
+export const homeworkSubmissionRelations = relations(homeworkSubmission, ({ one }) => ({
+  homework: one(homework, { fields: [homeworkSubmission.homeworkId], references: [homework.id] }),
+  pupil: one(pupil, { fields: [homeworkSubmission.pupilId], references: [pupil.id] }),
 }));
 
 export const applicantStageLogRelations = relations(applicantStageLog, ({ one }) => ({
