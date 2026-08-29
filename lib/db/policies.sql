@@ -112,3 +112,9 @@ drop policy if exists tenant_isolation on lesson_plan_entry;
 create policy tenant_isolation on lesson_plan_entry
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table salah_log enable row level security;
+drop policy if exists tenant_isolation on salah_log;
+create policy tenant_isolation on salah_log
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

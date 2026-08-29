@@ -4,7 +4,7 @@
 // yet, so there is no session to resolve a madrasah_id from. Every query below scopes to
 // the single seeded madrasah. Once sign-in exists this must read madrasah_id from the
 // session instead — see design/TECH_STACK.md "Multi-tenancy".
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte } from "drizzle-orm";
 import { db } from "./client";
 import {
   applicant,
@@ -19,12 +19,14 @@ import {
   madrasah,
   pupil,
   registerSubmission,
+  salahLog,
   staff,
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 import { computePriorityScore } from "@/lib/derive/admissions";
 import { computeHomeworkProgress } from "@/lib/derive/homework";
 import { LESSON_PLAN_YEARS } from "@/lib/derive/lesson-plans";
+import { computeAdherence, last7Days } from "@/lib/derive/salah";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -251,4 +253,52 @@ export async function listLessonPlansForWeek(madrasahId: string, weekStartDate: 
   });
   const byYear = new Map(plans.map((p) => [p.year, p]));
   return LESSON_PLAN_YEARS.map((year) => ({ year, plan: byYear.get(year) ?? null }));
+}
+
+// Madrasah-wide Ṣalāh & Tarbiyah rollup, computed over the last 7 days — see
+// lib/derive/salah.ts. Nothing here is stored; it's always a live read over salah_log.
+export async function getSalahDashboard(madrasahId: string) {
+  const days = last7Days();
+  const [pupils, classes, logs] = await Promise.all([
+    listPupils(madrasahId),
+    listClasses(madrasahId),
+    db
+      .select()
+      .from(salahLog)
+      .where(and(eq(salahLog.madrasahId, madrasahId), gte(salahLog.date, days[0]))),
+  ]);
+
+  const onRoll = pupils.filter((p) => p.enrolmentState === "Enrolled");
+  const overall = computeAdherence(logs, onRoll.length);
+
+  const byClass = classes
+    .map((c) => {
+      const classPupilIds = new Set(onRoll.filter((p) => p.classId === c.id).map((p) => p.id));
+      const classLogs = logs.filter((l) => classPupilIds.has(l.pupilId));
+      return { class: c, ...computeAdherence(classLogs, classPupilIds.size) };
+    })
+    .filter((c) => c.class.pupils.length > 0);
+
+  const logsByPupil = new Map<string, typeof logs>();
+  for (const l of logs) {
+    if (!logsByPupil.has(l.pupilId)) logsByPupil.set(l.pupilId, []);
+    logsByPupil.get(l.pupilId)!.push(l);
+  }
+
+  const notLogging = onRoll.filter((p) => !logsByPupil.has(p.id));
+  const lowAdherence = onRoll
+    .map((p) => {
+      const pupilLogs = logsByPupil.get(p.id) ?? [];
+      if (pupilLogs.length === 0) return null;
+      const prayedRate = Math.round((pupilLogs.filter((l) => l.prayed).length / pupilLogs.length) * 100);
+      return { pupil: p, prayedRate, logCount: pupilLogs.length };
+    })
+    .filter((x): x is { pupil: (typeof onRoll)[number]; prayedRate: number; logCount: number } => x !== null && x.prayedRate < 70)
+    .sort((a, b) => a.prayedRate - b.prayedRate);
+
+  return { days, onRollCount: onRoll.length, overall, byClass, notLogging, lowAdherence };
+}
+
+export async function getSalahLogForPupilDate(pupilId: string, date: string) {
+  return db.select().from(salahLog).where(and(eq(salahLog.pupilId, pupilId), eq(salahLog.date, date)));
 }

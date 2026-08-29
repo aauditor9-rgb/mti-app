@@ -82,6 +82,7 @@ export const lessonPlanSubjectEnum = pgEnum("lesson_plan_subject", [
   "Arabic Writing",
   "Revision / Test",
 ]);
+export const salahPrayerEnum = pgEnum("salah_prayer", ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -409,6 +410,30 @@ export const lessonPlanEntry = pgTable(
   (t) => [uniqueIndex("lesson_plan_entry_plan_subject_idx").on(t.lessonPlanId, t.subject)],
 );
 
+// Ṣalāh & Tarbiyah (design/README.md's "Muḥāsabah" pupil self-log, rolled up here into
+// a madrasah-wide view). There's no pupil/parent portal yet to self-log, so office
+// records it on a pupil's behalf — same pattern as Homework's office-marked
+// completion. One row per pupil per date per prayer; jamaah only makes sense when
+// prayed is true, enforced in the server action rather than the schema.
+export const salahLog = pgTable(
+  "salah_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    prayer: salahPrayerEnum("prayer").notNull(),
+    prayed: boolean("prayed").notNull().default(true),
+    jamaah: boolean("jamaah").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("salah_log_pupil_date_prayer_idx").on(t.pupilId, t.date, t.prayer)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -439,6 +464,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   ihsanLedgerRows: many(ihsanLedger),
   concerns: many(concern),
   homeworkSubmissions: many(homeworkSubmission),
+  salahLogs: many(salahLog),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -501,4 +527,8 @@ export const lessonPlanRelations = relations(lessonPlan, ({ one, many }) => ({
 
 export const lessonPlanEntryRelations = relations(lessonPlanEntry, ({ one }) => ({
   lessonPlan: one(lessonPlan, { fields: [lessonPlanEntry.lessonPlanId], references: [lessonPlan.id] }),
+}));
+
+export const salahLogRelations = relations(salahLog, ({ one }) => ({
+  pupil: one(pupil, { fields: [salahLog.pupilId], references: [pupil.id] }),
 }));
