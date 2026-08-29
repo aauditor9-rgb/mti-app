@@ -76,3 +76,15 @@ drop policy if exists tenant_isolation on concern;
 create policy tenant_isolation on concern
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table applicant enable row level security;
+drop policy if exists tenant_isolation on applicant;
+create policy tenant_isolation on applicant
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table applicant_stage_log enable row level security;
+drop policy if exists tenant_isolation on applicant_stage_log;
+create policy tenant_isolation on applicant_stage_log
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

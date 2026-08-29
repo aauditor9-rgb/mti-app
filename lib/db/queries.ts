@@ -7,6 +7,8 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "./client";
 import {
+  applicant,
+  applicantStageLog,
   attendanceMark,
   concern,
   ihsanAward,
@@ -18,6 +20,7 @@ import {
   staff,
 } from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
+import { computePriorityScore } from "@/lib/derive/admissions";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -161,4 +164,46 @@ export async function listConcerns(madrasahId: string) {
   ]);
   const pupilById = new Map(pupils.map((p) => [p.id, p]));
   return rows.map((r) => ({ ...r, pupil: pupilById.get(r.pupilId) ?? null }));
+}
+
+export async function listApplicants(madrasahId: string) {
+  const rows = await db.query.applicant.findMany({
+    where: eq(applicant.madrasahId, madrasahId),
+    orderBy: desc(applicant.createdAt),
+    with: {
+      class: true,
+      stageLog: { orderBy: desc(applicantStageLog.changedAt) },
+    },
+  });
+  return rows.map((row) => {
+    const stageEnteredAt = row.stageLog.find((l) => l.stage === row.stage)?.changedAt ?? row.createdAt;
+    const priority = computePriorityScore({
+      siblingAtMti: row.siblingAtMti,
+      familyAttendsMasjid: row.familyAttendsMasjid,
+      submittedAt: row.submittedAt,
+      quranLevel: row.quranLevel,
+    });
+    return { ...row, stageEnteredAt: stageEnteredAt.toISOString(), priority };
+  });
+}
+
+export async function getApplicant(madrasahId: string, applicantId: string) {
+  const row = await db.query.applicant.findFirst({
+    where: eq(applicant.id, applicantId),
+    with: {
+      class: true,
+      enrolledPupil: true,
+      stageLog: { orderBy: desc(applicantStageLog.changedAt) },
+    },
+  });
+  if (!row || row.madrasahId !== madrasahId) return null;
+
+  const stageEnteredAt = row.stageLog.find((l) => l.stage === row.stage)?.changedAt ?? row.createdAt;
+  const priority = computePriorityScore({
+    siblingAtMti: row.siblingAtMti,
+    familyAttendsMasjid: row.familyAttendsMasjid,
+    submittedAt: row.submittedAt,
+    quranLevel: row.quranLevel,
+  });
+  return { ...row, stageEnteredAt: stageEnteredAt.toISOString(), priority };
 }

@@ -44,6 +44,26 @@ export const concernCategoryEnum = pgEnum("concern_category", [
 ]);
 export const concernSeverityEnum = pgEnum("concern_severity", ["Low", "Medium", "High"]);
 export const concernStatusEnum = pgEnum("concern_status", ["Open", "Action taken", "Parent informed", "Resolved"]);
+export const admissionYearEnum = pgEnum("admission_year", [
+  "Reception",
+  "Year 1",
+  "Year 2",
+  "Year 3",
+  "Year 4",
+  "Year 5",
+  "Year 6",
+  "Year 7",
+  "Year 8",
+]);
+export const admissionStageEnum = pgEnum("admission_stage", [
+  "Enquiry",
+  "Application",
+  "Assessment",
+  "Offer",
+  "Enrolled",
+  "Waiting list",
+  "Declined",
+]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -255,6 +275,48 @@ export const concern = pgTable("concern", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Admissions pipeline (design/README.md "Admissions"). Priority is scored from
+// siblingAtMti/familyAttendsMasjid/quranLevel/submittedAt, never typed in — see
+// lib/derive/admissions.ts. "Sibling", "masjid" etc are yes/no fields the office
+// checks, not self-reported priority.
+export const applicant = pgTable("applicant", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  dob: date("dob").notNull(),
+  gender: genderEnum("gender").notNull(),
+  requestedYear: admissionYearEnum("requested_year").notNull(),
+  guardianName: text("guardian_name").notNull(),
+  guardianPhone: text("guardian_phone").notNull(),
+  guardianEmail: text("guardian_email"),
+  siblingAtMti: boolean("sibling_at_mti").notNull().default(false),
+  familyAttendsMasjid: boolean("family_attends_masjid").notNull().default(false),
+  quranLevel: text("quran_level"),
+  stage: admissionStageEnum("stage").notNull().default("Enquiry"),
+  declineReason: text("decline_reason"),
+  classId: uuid("class_id").references(() => klass.id, { onDelete: "set null" }),
+  enrolledPupilId: uuid("enrolled_pupil_id").references(() => pupil.id, { onDelete: "set null" }),
+  note: text("note"),
+  submittedAt: date("submitted_at").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// The full stage log a detail view reads — one row per transition, append-only.
+export const applicantStageLog = pgTable("applicant_stage_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  applicantId: uuid("applicant_id")
+    .notNull()
+    .references(() => applicant.id, { onDelete: "cascade" }),
+  stage: admissionStageEnum("stage").notNull(),
+  changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -316,4 +378,14 @@ export const concernRelations = relations(concern, ({ one }) => ({
   class: one(klass, { fields: [concern.classId], references: [klass.id] }),
   raisedBy: one(staff, { fields: [concern.raisedByStaffId], references: [staff.id] }),
   owner: one(staff, { fields: [concern.ownerStaffId], references: [staff.id] }),
+}));
+
+export const applicantRelations = relations(applicant, ({ one, many }) => ({
+  class: one(klass, { fields: [applicant.classId], references: [klass.id] }),
+  enrolledPupil: one(pupil, { fields: [applicant.enrolledPupilId], references: [pupil.id] }),
+  stageLog: many(applicantStageLog),
+}));
+
+export const applicantStageLogRelations = relations(applicantStageLog, ({ one }) => ({
+  applicant: one(applicant, { fields: [applicantStageLog.applicantId], references: [applicant.id] }),
 }));
