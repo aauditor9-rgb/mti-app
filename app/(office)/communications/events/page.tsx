@@ -1,6 +1,6 @@
 import { AddEventForm } from "@/components/office/add-event-form";
+import { EventCard } from "@/components/office/event-card";
 import { getMadrasah, listEvents } from "@/lib/db/queries";
-import { cn } from "@/lib/utils";
 
 export default async function EventsPage() {
   const madrasah = await getMadrasah();
@@ -25,39 +25,26 @@ export default async function EventsPage() {
             No events scheduled yet.
           </p>
         ) : (
-          events.map((e) => (
-            <div key={e.id} className="rounded-xl border border-border bg-[var(--surface)] p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <div>
-                  <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-                    {dateFormatter.format(e.startAt)}
-                    {" · "}
-                    {timeFormatter.format(e.startAt)}
-                    {e.endAt && `–${timeFormatter.format(e.endAt)}`}
-                  </p>
-                  <p className="font-heading text-h4 font-medium text-[var(--ink)]">{e.title}</p>
-                  <p className="text-small text-[var(--ink-2)]">
-                    {e.location}
-                    {e.audience && ` · ${e.audience}`}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {e.requiresConsent && (
-                    <span className="rounded-full bg-[var(--warn-bg)] px-2 py-0.5 text-tiny font-medium text-[var(--ink-2)]">Consent required</span>
-                  )}
-                  {e.requiresPayment && (
-                    <span className="rounded-full bg-[var(--warn-bg)] px-2 py-0.5 text-tiny font-medium text-[var(--ink-2)]">
-                      Payment £{Number(e.paymentAmount).toFixed(2)}
-                    </span>
-                  )}
-                  {e.requiresRsvp && (
-                    <span className={cn("rounded-full px-2 py-0.5 text-tiny font-medium", "bg-[var(--surface-2)] text-[var(--ink-2)]")}>RSVP</span>
-                  )}
-                </div>
-              </div>
-              {e.description && <p className="mt-2 text-small text-[var(--ink-2)]">{e.description}</p>}
-            </div>
-          ))
+          events.map((e) => {
+            const badges = [
+              e.requiresConsent && "Consent required",
+              e.requiresPayment && `Payment £${Number(e.paymentAmount).toFixed(2)}`,
+              e.requiresRsvp && "RSVP",
+            ].filter((b): b is string => !!b);
+            return (
+              <EventCard
+                key={e.id}
+                eventId={e.id}
+                dateLabel={`${dateFormatter.format(e.startAt)} · ${timeFormatter.format(e.startAt)}${e.endAt ? `–${timeFormatter.format(e.endAt)}` : ""}`}
+                title={e.title}
+                location={e.location}
+                audience={e.audience}
+                description={e.description}
+                badges={badges}
+                runningOrder={e.runningOrder}
+              />
+            );
+          })
         )}
       </div>
     </div>

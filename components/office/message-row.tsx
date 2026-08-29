@@ -32,7 +32,12 @@ export function MessageRow({
 
   return (
     <div className={cn("flex items-start gap-3 border-t border-border p-3 first:border-t-0", pending && "opacity-70")}>
-      <div className={cn("mt-1.5 size-2 shrink-0 rounded-full", unread ? "bg-primary" : "bg-transparent")} />
+      <div className="relative shrink-0">
+        <div className="flex size-8 items-center justify-center rounded-full bg-primary text-tiny font-medium text-primary-foreground">
+          {contactName.charAt(0)}
+        </div>
+        {unread && <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-[var(--surface)] bg-primary" />}
+      </div>
       <div className="min-w-0 flex-1">
         <p className="text-small font-medium text-[var(--ink)]">
           {direction === "Inbound" ? contactName : `To: ${contactName}`}

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { feePayment, household } from "@/lib/db/schema";
+import { feePayment, guardian as guardianTable, household, message } from "@/lib/db/schema";
 import { getMadrasah } from "@/lib/db/queries";
 import { generateFeeInvoicesForAllEnrolled } from "@/lib/db/fee-generation";
 
@@ -32,6 +32,33 @@ export async function recordPayment(formData: FormData) {
   });
 
   revalidatePath("/finance/fees");
+  return { ok: true };
+}
+
+// Logs a reminder in Communications > Messages — see design/README.md Settings
+// "Messaging integrations": no channel is configured here, so this only records what
+// was actually sent by the office elsewhere, never claims a real send.
+export async function sendFeeReminder(householdId: string, amountOwed: number) {
+  const madrasah = await getMadrasah();
+  const [householdRow] = await db.select().from(household).where(eq(household.id, householdId)).limit(1);
+  if (!householdRow || householdRow.madrasahId !== madrasah.id) {
+    return { ok: false, message: "Household not found." };
+  }
+  const [guardianRow] = await db.select().from(guardianTable).where(eq(guardianTable.householdId, householdId)).limit(1);
+
+  await db.insert(message).values({
+    madrasahId: madrasah.id,
+    audience: "Parent",
+    guardianId: guardianRow?.id ?? null,
+    contactName: guardianRow?.name ?? "Guardian",
+    direction: "Outbound",
+    channel: "App",
+    body: `Reminder: £${amountOwed.toFixed(2)} is outstanding on your account. Please contact the office to arrange payment.`,
+    readAt: new Date(),
+  });
+
+  revalidatePath("/finance/fees");
+  revalidatePath("/communications/messages");
   return { ok: true };
 }
 

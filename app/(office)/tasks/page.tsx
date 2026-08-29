@@ -51,24 +51,40 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Tasks</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
+          <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Open</p>
           <p className="font-heading text-h3 font-medium text-[var(--ink)]">{openCount}</p>
-          <p className="text-small text-[var(--muted)]">Open</p>
+          <p className="text-tiny text-[var(--muted)]">{openCount === 1 ? "task to do" : "tasks to do"}</p>
         </div>
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
+          <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Overdue</p>
           <p className={cn("font-heading text-h3 font-medium", overdueCount > 0 ? "text-[var(--alert)]" : "text-[var(--ink)]")}>
             {overdueCount}
           </p>
-          <p className="text-small text-[var(--muted)]">Overdue</p>
+          <p className="text-tiny text-[var(--muted)]">{overdueCount === 0 ? "nothing late" : "past due"}</p>
         </div>
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
+          <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Due in 7 days</p>
           <p className="font-heading text-h3 font-medium text-[var(--ink)]">{dueIn7Count}</p>
-          <p className="text-small text-[var(--muted)]">Due in 7 days</p>
+          <p className="text-tiny text-[var(--muted)]">coming up</p>
         </div>
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
+          <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Completed</p>
           <p className="font-heading text-h3 font-medium text-[var(--ink)]">{completedCount}</p>
-          <p className="text-small text-[var(--muted)]">Completed</p>
+          <p className="text-tiny text-[var(--muted)]">in total</p>
+        </div>
+        <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
+          <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Completion</p>
+          <p className="font-heading text-h3 font-medium text-[var(--ink)]">
+            {tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100)}%
+          </p>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100)}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -113,15 +129,24 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         {workload.size === 0 ? (
           <p className="text-small text-[var(--muted)]">No tasks assigned yet.</p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {[...workload.entries()].map(([name, { open, done }]) => (
-              <div key={name} className="flex items-center justify-between rounded-lg bg-[var(--surface-2)] p-3">
-                <span className="text-small font-medium text-[var(--ink)]">{name}</span>
-                <span className="text-tiny text-[var(--muted)]">
-                  {open} open · {done} done
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            {[...workload.entries()].map(([name, { open, done }]) => {
+              const total = open + done;
+              const donePct = total === 0 ? 0 : Math.round((done / total) * 100);
+              return (
+                <div key={name} className="rounded-lg bg-[var(--surface-2)] p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-small font-medium text-[var(--ink)]">{name}</span>
+                    <span className="text-tiny text-[var(--muted)]">
+                      {open} open · {done} done
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--border)]">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${donePct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

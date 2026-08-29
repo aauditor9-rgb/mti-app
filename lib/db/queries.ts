@@ -123,6 +123,25 @@ export async function listClassesForRegister(madrasahId: string, date: string) {
   }));
 }
 
+// Last 7 calendar days' present-rate, for the Dashboard's attendance trend chart —
+// computed live from attendance_mark, never stored (invariant 1). A day with no marks
+// at all (e.g. a weekend) reports 0 rather than being dropped, so the chart always
+// shows exactly 7 bars.
+export async function getAttendanceTrend(madrasahId: string) {
+  const days = last7Days();
+  const marks = await db
+    .select({ date: attendanceMark.date, code: attendanceMark.code })
+    .from(attendanceMark)
+    .where(and(eq(attendanceMark.madrasahId, madrasahId), gte(attendanceMark.date, days[0])));
+
+  return days.map((date) => {
+    const dayMarks = marks.filter((m) => m.date === date);
+    const presentCount = dayMarks.filter((m) => m.code === "P" || m.code === "L").length;
+    const pct = dayMarks.length === 0 ? 0 : Math.round((presentCount / dayMarks.length) * 100);
+    return { date, pct, markedCount: dayMarks.length };
+  });
+}
+
 export async function getRegisterForClass(madrasahId: string, classId: string, date: string) {
   const klassRow = await getClass(madrasahId, classId);
   if (!klassRow) return null;
@@ -488,7 +507,7 @@ export async function listHouseholdFeeSummaries(madrasahId: string) {
     return {
       householdId,
       guardianName: guardians[0]?.name ?? "Unknown guardian",
-      pupils: householdPupils.map((p) => ({ id: p.id, name: p.name })),
+      pupils: householdPupils.map((p) => ({ id: p.id, name: p.name, className: p.class?.name ?? null })),
       lines: householdLines.map((l) => ({ ...l, status: summary.lines.find((s) => s.id === l.id)!.status })),
       totalInvoiced: summary.totalInvoiced,
       totalPaid: summary.totalPaid,

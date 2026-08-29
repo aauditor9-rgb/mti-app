@@ -1,4 +1,5 @@
 import { PolicyCard } from "@/components/office/policy-card";
+import { expiryStatus } from "@/lib/derive/staff";
 import { getMadrasah, listPolicies } from "@/lib/db/queries";
 
 export default async function PoliciesPage() {
@@ -8,6 +9,10 @@ export default async function PoliciesPage() {
   const staffCompleteCount = policies.filter((p) => p.totalStaff > 0 && p.ackedCount === p.totalStaff).length;
   const totalAcks = policies.reduce((sum, p) => sum + p.ackedCount, 0);
   const totalOutstanding = policies.reduce((sum, p) => sum + (p.totalStaff - p.ackedCount), 0);
+  const reviewsDueSoon = policies.filter((p) => {
+    const s = expiryStatus(p.reviewByDate);
+    return s === "expiring" || s === "expired";
+  }).length;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -20,7 +25,7 @@ export default async function PoliciesPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
           <p className="font-heading text-h3 font-medium text-[var(--ink)]">{policies.length}</p>
           <p className="text-small text-[var(--muted)]">Policies published</p>
@@ -32,6 +37,12 @@ export default async function PoliciesPage() {
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
           <p className="font-heading text-h3 font-medium text-[var(--ink)]">{totalOutstanding}</p>
           <p className="text-small text-[var(--muted)]">Staff acks outstanding ({totalAcks} done)</p>
+        </div>
+        <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
+          <p className={reviewsDueSoon > 0 ? "font-heading text-h3 font-medium text-[var(--alert)]" : "font-heading text-h3 font-medium text-[var(--ink)]"}>
+            {reviewsDueSoon}
+          </p>
+          <p className="text-small text-[var(--muted)]">Reviews due soon</p>
         </div>
       </div>
 

@@ -35,8 +35,15 @@ export function PolicyCard({
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-[var(--surface)]">
       <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-start justify-between gap-3 p-4 text-left hover:bg-[var(--surface-2)]">
-        <div className="flex items-start gap-2">
-          {open ? <ChevronDown className="mt-1 size-4 text-[var(--muted)]" /> : <ChevronRight className="mt-1 size-4 text-[var(--muted)]" />}
+        <div className="flex items-start gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-tiny font-medium text-primary-foreground">
+            {title
+              .split(" ")
+              .map((w) => w[0])
+              .slice(0, 2)
+              .join("")}
+          </div>
+          {open ? <ChevronDown className="mt-1 size-4 shrink-0 text-[var(--muted)]" /> : <ChevronRight className="mt-1 size-4 shrink-0 text-[var(--muted)]" />}
           <div>
             <p className="font-medium text-[var(--ink)]">{title}</p>
             <p className="text-tiny text-[var(--muted)]">

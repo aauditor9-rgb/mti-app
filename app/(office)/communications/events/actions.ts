@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { event } from "@/lib/db/schema";
 import { getMadrasah } from "@/lib/db/queries";
@@ -39,6 +40,31 @@ export async function createEvent(formData: FormData) {
     paymentAmount: paymentAmount !== null ? String(paymentAmount) : null,
     requiresRsvp,
   });
+
+  revalidatePath("/communications/events");
+  return { ok: true };
+}
+
+export async function addRunningOrderItem(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const time = String(formData.get("time") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const detail = String(formData.get("detail") ?? "").trim();
+
+  if (!eventId || !time || !title) {
+    return { ok: false, message: "Enter a time and title." };
+  }
+
+  const madrasah = await getMadrasah();
+  const [row] = await db
+    .select()
+    .from(event)
+    .where(and(eq(event.id, eventId), eq(event.madrasahId, madrasah.id)))
+    .limit(1);
+  if (!row) return { ok: false, message: "Event not found." };
+
+  const runningOrder = [...row.runningOrder, { time, title, ...(detail ? { detail } : {}) }];
+  await db.update(event).set({ runningOrder }).where(eq(event.id, eventId));
 
   revalidatePath("/communications/events");
   return { ok: true };
