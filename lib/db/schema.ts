@@ -30,6 +30,20 @@ export const guardianRelationEnum = pgEnum("guardian_relation", [
 export const enrolmentStateEnum = pgEnum("enrolment_state", ["Enrolled", "Left", "Archived"]);
 export const attendanceCodeEnum = pgEnum("attendance_code", ["P", "L", "I", "F", "T", "A", "U"]);
 export const ihsanCategoryEnum = pgEnum("ihsan_category", ["Hudur", "Ibadah", "Ilm", "Adab", "Khidmah"]);
+export const concernCategoryEnum = pgEnum("concern_category", [
+  "Talking",
+  "Disruption",
+  "Incomplete work",
+  "Poor effort",
+  "Disrespect",
+  "Uniform issue",
+  "Repeated lateness",
+  "Unsafe conduct",
+  "Bullying",
+  "Other",
+]);
+export const concernSeverityEnum = pgEnum("concern_severity", ["Low", "Medium", "High"]);
+export const concernStatusEnum = pgEnum("concern_status", ["Open", "Action taken", "Parent informed", "Resolved"]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -213,6 +227,34 @@ export const ihsanLedger = pgTable("ihsan_ledger", {
   awardedAt: timestamp("awarded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Pastoral concerns (design/README.md "Concerns"). A High-severity concern (or an
+// explicit escalation) stamps safeguardingNotified — but this is a plain data field,
+// NOT the access-controlled safeguarding case system design/TECH_STACK.md describes
+// ("separate table, DSL-only RLS, append-only, fully audited"). That needs real
+// authentication and roles to build honestly, which don't exist yet — see
+// lib/db/queries.ts. Building a fake DSL-gate now would be worse than not having one.
+export const concern = pgTable("concern", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" }),
+  classId: uuid("class_id").references(() => klass.id, { onDelete: "set null" }),
+  category: concernCategoryEnum("category").notNull(),
+  note: text("note").notNull(),
+  severity: concernSeverityEnum("severity").notNull().default("Low"),
+  status: concernStatusEnum("status").notNull().default("Open"),
+  raisedByStaffId: uuid("raised_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  ownerStaffId: uuid("owner_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  safeguardingNotified: boolean("safeguarding_notified").notNull().default(false),
+  safeguardingNotifiedAt: timestamp("safeguarding_notified_at", { withTimezone: true }),
+  parentInformedAt: timestamp("parent_informed_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -241,6 +283,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   guardianLinks: many(pupilGuardian),
   attendanceMarks: many(attendanceMark),
   ihsanLedgerRows: many(ihsanLedger),
+  concerns: many(concern),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -266,4 +309,11 @@ export const ihsanLedgerRelations = relations(ihsanLedger, ({ one }) => ({
   award: one(ihsanAward, { fields: [ihsanLedger.awardId], references: [ihsanAward.id] }),
   class: one(klass, { fields: [ihsanLedger.classId], references: [klass.id] }),
   awardedBy: one(staff, { fields: [ihsanLedger.awardedByStaffId], references: [staff.id] }),
+}));
+
+export const concernRelations = relations(concern, ({ one }) => ({
+  pupil: one(pupil, { fields: [concern.pupilId], references: [pupil.id] }),
+  class: one(klass, { fields: [concern.classId], references: [klass.id] }),
+  raisedBy: one(staff, { fields: [concern.raisedByStaffId], references: [staff.id] }),
+  owner: one(staff, { fields: [concern.ownerStaffId], references: [staff.id] }),
 }));

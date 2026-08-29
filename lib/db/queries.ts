@@ -4,9 +4,19 @@
 // yet, so there is no session to resolve a madrasah_id from. Every query below scopes to
 // the single seeded madrasah. Once sign-in exists this must read madrasah_id from the
 // session instead — see design/TECH_STACK.md "Multi-tenancy".
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "./client";
-import { attendanceMark, ihsanAward, ihsanLedger, klass, madrasah, pupil, registerSubmission } from "./schema";
+import {
+  attendanceMark,
+  concern,
+  ihsanAward,
+  ihsanLedger,
+  klass,
+  madrasah,
+  pupil,
+  registerSubmission,
+  staff,
+} from "./schema";
 import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 
 export async function getMadrasah() {
@@ -134,4 +144,21 @@ export async function listIhsanTotals(madrasahId: string) {
       automatic,
     };
   });
+}
+
+export async function listStaff(madrasahId: string) {
+  return db.query.staff.findMany({ where: eq(staff.madrasahId, madrasahId), orderBy: asc(staff.name) });
+}
+
+export async function listConcerns(madrasahId: string) {
+  const [pupils, rows] = await Promise.all([
+    listPupils(madrasahId),
+    db.query.concern.findMany({
+      where: eq(concern.madrasahId, madrasahId),
+      orderBy: desc(concern.createdAt),
+      with: { class: true, raisedBy: true, owner: true },
+    }),
+  ]);
+  const pupilById = new Map(pupils.map((p) => [p.id, p]));
+  return rows.map((r) => ({ ...r, pupil: pupilById.get(r.pupilId) ?? null }));
 }

@@ -67,3 +67,12 @@ drop policy if exists tenant_isolation on ihsan_ledger;
 create policy tenant_isolation on ihsan_ledger
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+-- Ordinary pastoral concerns — tenant-scoped like every other table. This is NOT the
+-- separate DSL-only safeguarding case system design/TECH_STACK.md calls for; see the
+-- comment on the `concern` table in lib/db/schema.ts for why that's deferred.
+alter table concern enable row level security;
+drop policy if exists tenant_isolation on concern;
+create policy tenant_isolation on concern
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
