@@ -27,6 +27,7 @@ export const guardianRelationEnum = pgEnum("guardian_relation", [
   "Other",
 ]);
 export const enrolmentStateEnum = pgEnum("enrolment_state", ["Enrolled", "Left", "Archived"]);
+export const attendanceCodeEnum = pgEnum("attendance_code", ["P", "L", "I", "F", "T", "A", "U"]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -137,6 +138,46 @@ export const pupilGuardian = pgTable(
   (t) => [primaryKey({ columns: [t.pupilId, t.guardianId] })],
 );
 
+// Attendance is recorded per class per day (design/README.md's date::session::studentId
+// mark key is simplified to date::studentId here — the maktab's per-session timetable
+// structure isn't modelled yet, see design/TECH_STACK.md build order item 7).
+export const attendanceMark = pgTable(
+  "attendance_mark",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    classId: uuid("class_id")
+      .notNull()
+      .references(() => klass.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    code: attendanceCodeEnum("code").notNull(),
+    markedAt: timestamp("marked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("attendance_mark_pupil_date_idx").on(t.pupilId, t.date)],
+);
+
+// A row here means the register is submitted and locked — see lib/derive/attendance.ts.
+export const registerSubmission = pgTable(
+  "register_submission",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    classId: uuid("class_id")
+      .notNull()
+      .references(() => klass.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("register_submission_class_date_idx").on(t.classId, t.date)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -145,6 +186,8 @@ export const klassRelations = relations(klass, ({ one, many }) => ({
   madrasah: one(madrasah, { fields: [klass.madrasahId], references: [madrasah.id] }),
   leadTeacher: one(staff, { fields: [klass.leadTeacherId], references: [staff.id] }),
   pupils: many(pupil),
+  attendanceMarks: many(attendanceMark),
+  registerSubmissions: many(registerSubmission),
 }));
 
 export const householdRelations = relations(household, ({ many }) => ({
@@ -161,9 +204,19 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   household: one(household, { fields: [pupil.householdId], references: [household.id] }),
   class: one(klass, { fields: [pupil.classId], references: [klass.id] }),
   guardianLinks: many(pupilGuardian),
+  attendanceMarks: many(attendanceMark),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
   pupil: one(pupil, { fields: [pupilGuardian.pupilId], references: [pupil.id] }),
   guardian: one(guardian, { fields: [pupilGuardian.guardianId], references: [guardian.id] }),
+}));
+
+export const attendanceMarkRelations = relations(attendanceMark, ({ one }) => ({
+  pupil: one(pupil, { fields: [attendanceMark.pupilId], references: [pupil.id] }),
+  class: one(klass, { fields: [attendanceMark.classId], references: [klass.id] }),
+}));
+
+export const registerSubmissionRelations = relations(registerSubmission, ({ one }) => ({
+  class: one(klass, { fields: [registerSubmission.classId], references: [klass.id] }),
 }));

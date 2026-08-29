@@ -43,3 +43,15 @@ drop policy if exists tenant_isolation on pupil_guardian;
 create policy tenant_isolation on pupil_guardian
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table attendance_mark enable row level security;
+drop policy if exists tenant_isolation on attendance_mark;
+create policy tenant_isolation on attendance_mark
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+alter table register_submission enable row level security;
+drop policy if exists tenant_isolation on register_submission;
+create policy tenant_isolation on register_submission
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
