@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -6,9 +7,16 @@ export default function Home() {
       <h1 className="font-heading text-h1 font-medium">MTI Maktab</h1>
       <p className="w-full max-w-md text-body text-[var(--ink-2)]">
         Scaffold running — Next.js, Tailwind, shadcn/ui and the design tokens from{" "}
-        <code>design/README.md</code> are wired up. No screens built yet.
+        <code>design/README.md</code> are wired up.
       </p>
-      <Button>Primary action</Button>
+      <div className="flex gap-2">
+        <Button render={<Link href="/students">Students</Link>} nativeButton={false} />
+        <Button
+          render={<Link href="/classes">Classes &amp; Allocation</Link>}
+          nativeButton={false}
+          variant="outline"
+        />
+      </div>
     </div>
   );
 }

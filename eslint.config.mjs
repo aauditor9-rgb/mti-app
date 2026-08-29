@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design reference bundle — prototype runtime, not production code (see AGENTS.md).
+    "design/**",
   ]),
 ]);
 

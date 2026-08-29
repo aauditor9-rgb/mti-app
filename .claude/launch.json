@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "design-prototype",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "design", "-p", "4321", "-c-1"],
+      "port": 4321
+    }
+  ]
+}
