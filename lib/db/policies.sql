@@ -55,3 +55,15 @@ drop policy if exists tenant_isolation on register_submission;
 create policy tenant_isolation on register_submission
   using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
   with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);
+
+-- ihsan_award is a shared catalog, not tenant-owned — every madrasah reads the same
+-- fixed award list, so it's world-readable rather than madrasah_id-scoped.
+alter table ihsan_award enable row level security;
+drop policy if exists readable on ihsan_award;
+create policy readable on ihsan_award using (true);
+
+alter table ihsan_ledger enable row level security;
+drop policy if exists tenant_isolation on ihsan_ledger;
+create policy tenant_isolation on ihsan_ledger
+  using (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid)
+  with check (madrasah_id = (auth.jwt() -> 'app_metadata' ->> 'madrasah_id')::uuid);

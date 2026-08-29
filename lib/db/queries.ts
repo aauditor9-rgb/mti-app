@@ -6,7 +6,8 @@
 // session instead — see design/TECH_STACK.md "Multi-tenancy".
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "./client";
-import { attendanceMark, klass, madrasah, pupil, registerSubmission } from "./schema";
+import { attendanceMark, ihsanAward, ihsanLedger, klass, madrasah, pupil, registerSubmission } from "./schema";
+import { computeAutomaticHudurAwards } from "@/lib/derive/ihsan";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -95,4 +96,42 @@ export async function getRegisterForClass(madrasahId: string, classId: string, d
     pupils: klassRow.pupils.map((p) => ({ ...p, mark: markByPupil.get(p.id) ?? null })),
     submittedAt: submission?.submittedAt ?? null,
   };
+}
+
+export async function listIhsanAwards() {
+  return db.query.ihsanAward.findMany({ orderBy: [asc(ihsanAward.category), asc(ihsanAward.points)] });
+}
+
+// The one place a pupil's Iḥsān total is computed — combines manual ledger rows with
+// the automatic Ḥuḍūr awards derived live from attendance_mark (never stored, so it's
+// always in sync with the register). Read by both the leaderboard and the feed below.
+export async function listIhsanTotals(madrasahId: string) {
+  const [pupils, ledgerRows, marks, awards] = await Promise.all([
+    listPupils(madrasahId),
+    db.query.ihsanLedger.findMany({
+      where: eq(ihsanLedger.madrasahId, madrasahId),
+      with: { award: true, awardedBy: true, class: true },
+    }),
+    db.select().from(attendanceMark).where(eq(attendanceMark.madrasahId, madrasahId)),
+    listIhsanAwards(),
+  ]);
+
+  const hudurPoints = {
+    fullWeek: awards.find((a) => a.category === "Hudur" && a.name === "Full Week")?.points ?? 1,
+    onTimeEveryDay: awards.find((a) => a.category === "Hudur" && a.name === "On Time Every Day")?.points ?? 1,
+  };
+
+  return pupils.map((p) => {
+    const manualRows = ledgerRows.filter((r) => r.pupilId === p.id);
+    const pupilMarks = marks.filter((m) => m.pupilId === p.id).map((m) => ({ date: m.date, code: m.code }));
+    const automatic = computeAutomaticHudurAwards(pupilMarks, hudurPoints);
+    const manualPoints = manualRows.reduce((sum, r) => sum + r.award.points, 0);
+    const automaticPoints = automatic.reduce((sum, a) => sum + a.points, 0);
+    return {
+      ...p,
+      points: manualPoints + automaticPoints,
+      manualRows,
+      automatic,
+    };
+  });
 }

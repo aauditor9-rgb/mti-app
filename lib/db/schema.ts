@@ -5,6 +5,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   date,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -28,6 +29,7 @@ export const guardianRelationEnum = pgEnum("guardian_relation", [
 ]);
 export const enrolmentStateEnum = pgEnum("enrolment_state", ["Enrolled", "Left", "Archived"]);
 export const attendanceCodeEnum = pgEnum("attendance_code", ["P", "L", "I", "F", "T", "A", "U"]);
+export const ihsanCategoryEnum = pgEnum("ihsan_category", ["Hudur", "Ibadah", "Ilm", "Adab", "Khidmah"]);
 
 export const madrasah = pgTable("madrasah", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -178,6 +180,39 @@ export const registerSubmission = pgTable(
   (t) => [uniqueIndex("register_submission_class_date_idx").on(t.classId, t.date)],
 );
 
+// The fixed award catalog (design/README.md "Iḥsān (reward) points") — staff pick an
+// award by name and its points come with it, never free-typed. Hudur awards are
+// automatic (settled from attendance_mark, see lib/derive/ihsan.ts) and never appear
+// in the manual "Award points" picker.
+export const ihsanAward = pgTable(
+  "ihsan_award",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    category: ihsanCategoryEnum("category").notNull(),
+    name: text("name").notNull(),
+    points: integer("points").notNull(),
+    automatic: boolean("automatic").notNull().default(false),
+  },
+  (t) => [uniqueIndex("ihsan_award_category_name_idx").on(t.category, t.name)],
+);
+
+// A pupil's total is always summed from this ledger, never stored — invariant 1.
+export const ihsanLedger = pgTable("ihsan_ledger", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  madrasahId: uuid("madrasah_id")
+    .notNull()
+    .references(() => madrasah.id, { onDelete: "cascade" }),
+  pupilId: uuid("pupil_id")
+    .notNull()
+    .references(() => pupil.id, { onDelete: "cascade" }),
+  awardId: uuid("award_id")
+    .notNull()
+    .references(() => ihsanAward.id, { onDelete: "restrict" }),
+  classId: uuid("class_id").references(() => klass.id, { onDelete: "set null" }),
+  awardedByStaffId: uuid("awarded_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+  awardedAt: timestamp("awarded_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -205,6 +240,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   class: one(klass, { fields: [pupil.classId], references: [klass.id] }),
   guardianLinks: many(pupilGuardian),
   attendanceMarks: many(attendanceMark),
+  ihsanLedgerRows: many(ihsanLedger),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -219,4 +255,15 @@ export const attendanceMarkRelations = relations(attendanceMark, ({ one }) => ({
 
 export const registerSubmissionRelations = relations(registerSubmission, ({ one }) => ({
   class: one(klass, { fields: [registerSubmission.classId], references: [klass.id] }),
+}));
+
+export const ihsanAwardRelations = relations(ihsanAward, ({ many }) => ({
+  ledgerRows: many(ihsanLedger),
+}));
+
+export const ihsanLedgerRelations = relations(ihsanLedger, ({ one }) => ({
+  pupil: one(pupil, { fields: [ihsanLedger.pupilId], references: [pupil.id] }),
+  award: one(ihsanAward, { fields: [ihsanLedger.awardId], references: [ihsanAward.id] }),
+  class: one(klass, { fields: [ihsanLedger.classId], references: [klass.id] }),
+  awardedBy: one(staff, { fields: [ihsanLedger.awardedByStaffId], references: [staff.id] }),
 }));

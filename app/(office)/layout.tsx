@@ -1,4 +1,4 @@
-import { CalendarCheck, GraduationCap, Users } from "lucide-react";
+import { CalendarCheck, GraduationCap, Sparkles, Users } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { getMadrasah } from "@/lib/db/queries";
 
@@ -53,6 +53,9 @@ export default async function OfficeLayout({ children }: { children: React.React
             <div className="flex flex-col gap-0.5">
               <OfficeNavLink href="/attendance" icon={<CalendarCheck className="size-4" />}>
                 Attendance
+              </OfficeNavLink>
+              <OfficeNavLink href="/ihsan" icon={<Sparkles className="size-4" />}>
+                Iḥsān Points
               </OfficeNavLink>
             </div>
           </div>
