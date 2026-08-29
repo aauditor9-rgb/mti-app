@@ -122,6 +122,11 @@ export const klass = pgTable(
     name: text("name").notNull(),
     gender: classGenderEnum("gender").notNull(),
     headLabel: text("head_label").notNull(),
+    // Nullable: Pre-Hifdh/Hifz classes span mixed ages and don't map to one year band.
+    // Needed because headLabel alone doesn't group girls' sections (e.g. "Year 1a")
+    // under a shared year the way boys' classes ("Year 1") already do — see
+    // lib/db/queries.ts listPupilsByYearBand, used by the Du'as tracker.
+    yearBand: admissionYearEnum("year_band"),
     hifdhType: hifdhTypeEnum("hifdh_type").notNull().default("None"),
     leadTeacherId: uuid("lead_teacher_id").references(() => staff.id, { onDelete: "set null" }),
     timing: text("timing").notNull(),
@@ -434,6 +439,49 @@ export const salahLog = pgTable(
   (t) => [uniqueIndex("salah_log_pupil_date_prayer_idx").on(t.pupilId, t.date, t.prayer)],
 );
 
+// Du'as Progress Tracker (design/README.md "Progress trackers" — "per-pupil status").
+// The prototype's own office screen never actually shows a pupil selector despite
+// that spec line — a prototype gap. This builds the real per-pupil tracking: a
+// curriculum catalog per year band, and a status row per pupil per catalog item.
+// Only Reception's 25-item list is seeded verbatim from the prototype (English
+// names only — no Arabic/translation text is fabricated); other years start empty
+// and are built out via "+ Add du'a" on the screen, same as a real madrasah would.
+export const duaCatalogItem = pgTable(
+  "dua_catalog_item",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    year: admissionYearEnum("year").notNull(),
+    name: text("name").notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("dua_catalog_item_year_name_idx").on(t.madrasahId, t.year, t.name)],
+);
+
+export const duaPupilStatus = pgTable(
+  "dua_pupil_status",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    madrasahId: uuid("madrasah_id")
+      .notNull()
+      .references(() => madrasah.id, { onDelete: "cascade" }),
+    pupilId: uuid("pupil_id")
+      .notNull()
+      .references(() => pupil.id, { onDelete: "cascade" }),
+    duaCatalogItemId: uuid("dua_catalog_item_id")
+      .notNull()
+      .references(() => duaCatalogItem.id, { onDelete: "cascade" }),
+    arabicMemorised: boolean("arabic_memorised").notNull().default(false),
+    translationMemorised: boolean("translation_memorised").notNull().default(false),
+    readAtHome: boolean("read_at_home").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("dua_pupil_status_pupil_item_idx").on(t.pupilId, t.duaCatalogItemId)],
+);
+
 export const staffRelations = relations(staff, ({ many }) => ({
   classesLed: many(klass),
 }));
@@ -465,6 +513,7 @@ export const pupilRelations = relations(pupil, ({ one, many }) => ({
   concerns: many(concern),
   homeworkSubmissions: many(homeworkSubmission),
   salahLogs: many(salahLog),
+  duaStatuses: many(duaPupilStatus),
 }));
 
 export const pupilGuardianRelations = relations(pupilGuardian, ({ one }) => ({
@@ -531,4 +580,13 @@ export const lessonPlanEntryRelations = relations(lessonPlanEntry, ({ one }) => 
 
 export const salahLogRelations = relations(salahLog, ({ one }) => ({
   pupil: one(pupil, { fields: [salahLog.pupilId], references: [pupil.id] }),
+}));
+
+export const duaCatalogItemRelations = relations(duaCatalogItem, ({ many }) => ({
+  statuses: many(duaPupilStatus),
+}));
+
+export const duaPupilStatusRelations = relations(duaPupilStatus, ({ one }) => ({
+  pupil: one(pupil, { fields: [duaPupilStatus.pupilId], references: [pupil.id] }),
+  item: one(duaCatalogItem, { fields: [duaPupilStatus.duaCatalogItemId], references: [duaCatalogItem.id] }),
 }));

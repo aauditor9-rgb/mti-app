@@ -11,6 +11,7 @@ import {
   applicantStageLog,
   attendanceMark,
   concern,
+  duaCatalogItem,
   homework,
   ihsanAward,
   ihsanLedger,
@@ -27,6 +28,7 @@ import { computePriorityScore } from "@/lib/derive/admissions";
 import { computeHomeworkProgress } from "@/lib/derive/homework";
 import { LESSON_PLAN_YEARS } from "@/lib/derive/lesson-plans";
 import { computeAdherence, last7Days } from "@/lib/derive/salah";
+import type { AdmissionYear } from "@/lib/derive/admissions";
 
 export async function getMadrasah() {
   const [row] = await db.select().from(madrasah).limit(1);
@@ -301,4 +303,23 @@ export async function getSalahDashboard(madrasahId: string) {
 
 export async function getSalahLogForPupilDate(pupilId: string, date: string) {
   return db.select().from(salahLog).where(and(eq(salahLog.pupilId, pupilId), eq(salahLog.date, date)));
+}
+
+// Pupils on roll whose class carries this year band — see klass.yearBand in
+// lib/db/schema.ts for why this can't be derived from headLabel alone.
+export async function listPupilsByYearBand(madrasahId: string, year: AdmissionYear) {
+  const pupils = await listPupils(madrasahId);
+  return pupils.filter((p) => p.class?.yearBand === year && p.enrolmentState === "Enrolled");
+}
+
+export async function getDuaTrackerForYear(madrasahId: string, year: AdmissionYear) {
+  const [pupils, items] = await Promise.all([
+    listPupilsByYearBand(madrasahId, year),
+    db.query.duaCatalogItem.findMany({
+      where: and(eq(duaCatalogItem.madrasahId, madrasahId), eq(duaCatalogItem.year, year)),
+      orderBy: asc(duaCatalogItem.orderIndex),
+      with: { statuses: { with: { pupil: true } } },
+    }),
+  ]);
+  return { pupils, items };
 }

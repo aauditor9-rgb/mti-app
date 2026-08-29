@@ -132,6 +132,15 @@ async function main() {
   const insertedStaff = await db.insert(schema.staff).values(staffRows).returning();
   const staffIdByName = new Map(insertedStaff.map((s) => [s.name, s.id]));
 
+  // Boys' headLabel ("Reception", "Year 1"...) already matches the admission_year enum
+  // exactly; girls' sections ("Year 1a", "Year 3g") need the trailing a/b/g letter
+  // stripped to group under the same year band — see lib/db/schema.ts on klass.yearBand.
+  function yearBandFor(head: string): (typeof schema.admissionYearEnum.enumValues)[number] | null {
+    if (head === "Reception") return "Reception";
+    const m = head.match(/^Year (\d)/);
+    return m ? (`Year ${m[1]}` as (typeof schema.admissionYearEnum.enumValues)[number]) : null;
+  }
+
   const classRows: (typeof schema.klass.$inferInsert)[] = [
     ...MAKTAB_TIMETABLE.boys.map((row) => ({ row, gender: "Boys" as const })),
     ...MAKTAB_TIMETABLE.girls.map((row) => ({ row, gender: "Girls" as const })),
@@ -140,6 +149,7 @@ async function main() {
     name: row.cls,
     gender,
     headLabel: row.head,
+    yearBand: yearBandFor(row.head),
     hifdhType: "None",
     leadTeacherId: staffIdByName.get(row.s[0].teacher) ?? null,
     timing: MAKTAB_SESSIONS_LABEL,
@@ -150,6 +160,7 @@ async function main() {
     name: "Pre-Hifdh Boys",
     gender: "Boys",
     headLabel: "Pre-Hifdh",
+    yearBand: null,
     hifdhType: "Pre-Hifz",
     leadTeacherId: staffIdByName.get("Hafiz Siraj") ?? null,
     timing: "Mon–Fri · 5:00–7:30pm",
@@ -160,6 +171,7 @@ async function main() {
     name: "Hifz Class Boys",
     gender: "Boys",
     headLabel: "Hifz",
+    yearBand: null,
     hifdhType: "Full Hifz",
     leadTeacherId: staffIdByName.get("Hafiz Aqib") ?? null,
     timing: "Mon–Sat · 5:00–7:30pm, Sat 7:00–9:00am",
