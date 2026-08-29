@@ -15,6 +15,7 @@ import {
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { PortalTopbar } from "@/components/shared/portal-topbar";
 import { NamePicker } from "@/components/shared/name-picker";
+import { NavGroup } from "@/components/shared/nav-group";
 import { getCurrentStaff, getMadrasah, listPortalStaff } from "@/lib/db/queries";
 import { pickTeacherStaff, logOutTeacher } from "./session-actions";
 
@@ -48,61 +49,55 @@ export default async function TeacherLayout({ children }: { children: React.Reac
           </div>
 
           <nav className="flex flex-col gap-3">
-            <div>
-              <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Today</p>
-              <div className="flex flex-col gap-0.5">
-                <OfficeNavLink href="/teacher" icon={<SunMoon className="size-4" />}>
-                  Today&apos;s Lesson
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/clock" icon={<Clock className="size-4" />}>
-                  Check-in &amp; Clock
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/register" icon={<CalendarCheck className="size-4" />}>
-                  My Register
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/students" icon={<Users className="size-4" />}>
-                  My Students
-                </OfficeNavLink>
-              </div>
-            </div>
+            <NavGroup title="Today" hrefs={["/teacher", "/teacher/clock", "/teacher/register", "/teacher/students"]}>
+              <OfficeNavLink href="/teacher" icon={<SunMoon className="size-4" />}>
+                Today&apos;s Lesson
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/clock" icon={<Clock className="size-4" />}>
+                Check-in &amp; Clock
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/register" icon={<CalendarCheck className="size-4" />}>
+                My Register
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/students" icon={<Users className="size-4" />}>
+                My Students
+              </OfficeNavLink>
+            </NavGroup>
 
-            <div>
-              <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Teaching</p>
-              <div className="flex flex-col gap-0.5">
-                <OfficeNavLink href="/teacher/lesson-plans" icon={<CalendarDays className="size-4" />}>
-                  Lesson Plans
+            <NavGroup
+              title="Teaching"
+              hrefs={["/teacher/lesson-plans", "/teacher/holiday-revision", "/teacher/set-work", "/teacher/homework-review", "/teacher/hifz-diary"]}
+            >
+              <OfficeNavLink href="/teacher/lesson-plans" icon={<CalendarDays className="size-4" />}>
+                Lesson Plans
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/holiday-revision" icon={<CalendarClock className="size-4" />}>
+                Holiday Revision
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/set-work" icon={<PenSquare className="size-4" />}>
+                Set Work
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/homework-review" icon={<BookOpen className="size-4" />}>
+                Homework Review
+              </OfficeNavLink>
+              {currentStaff.isHifzTeacher && (
+                <OfficeNavLink href="/teacher/hifz-diary" icon={<BookMarked className="size-4" />}>
+                  Hifz Diary
                 </OfficeNavLink>
-                <OfficeNavLink href="/teacher/holiday-revision" icon={<CalendarClock className="size-4" />}>
-                  Holiday Revision
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/set-work" icon={<PenSquare className="size-4" />}>
-                  Set Work
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/homework-review" icon={<BookOpen className="size-4" />}>
-                  Homework Review
-                </OfficeNavLink>
-                {currentStaff.isHifzTeacher && (
-                  <OfficeNavLink href="/teacher/hifz-diary" icon={<BookMarked className="size-4" />}>
-                    Hifz Diary
-                  </OfficeNavLink>
-                )}
-              </div>
-            </div>
+              )}
+            </NavGroup>
 
-            <div>
-              <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Pastoral</p>
-              <div className="flex flex-col gap-0.5">
-                <OfficeNavLink href="/teacher/concerns" icon={<HeartHandshake className="size-4" />}>
-                  Concerns
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/ihsan" icon={<Sparkles className="size-4" />}>
-                  Iḥsān Points
-                </OfficeNavLink>
-                <OfficeNavLink href="/teacher/messages" icon={<Inbox className="size-4" />}>
-                  Messages
-                </OfficeNavLink>
-              </div>
-            </div>
+            <NavGroup title="Pastoral" hrefs={["/teacher/concerns", "/teacher/ihsan", "/teacher/messages"]}>
+              <OfficeNavLink href="/teacher/concerns" icon={<HeartHandshake className="size-4" />}>
+                Concerns
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/ihsan" icon={<Sparkles className="size-4" />}>
+                Iḥsān Points
+              </OfficeNavLink>
+              <OfficeNavLink href="/teacher/messages" icon={<Inbox className="size-4" />}>
+                Messages
+              </OfficeNavLink>
+            </NavGroup>
           </nav>
         </aside>
 

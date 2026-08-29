@@ -3,6 +3,7 @@ import { BookOpen, ClipboardList, Inbox, Receipt, Sparkles, User } from "lucide-
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { PortalTopbar } from "@/components/shared/portal-topbar";
 import { NamePicker } from "@/components/shared/name-picker";
+import { NavGroup } from "@/components/shared/nav-group";
 import { getCurrentGuardian, getMadrasah, listPortalGuardians } from "@/lib/db/queries";
 import { pickParentGuardian, logOutParent } from "./session-actions";
 import { handToPupil } from "./hand-to-actions";
@@ -55,40 +56,34 @@ export default async function ParentLayout({ children }: { children: React.React
           )}
 
           <nav className="flex flex-col gap-3">
-            <div>
-              <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">My Child</p>
-              <div className="flex flex-col gap-0.5">
-                {firstChild && (
-                  <OfficeNavLink href="/parent" icon={<User className="size-4" />}>
-                    {firstChild.name.split(" ")[0]}
-                  </OfficeNavLink>
-                )}
-                <OfficeNavLink href="/parent/learning" icon={<BookOpen className="size-4" />}>
-                  Learning
+            <NavGroup title="My Child" hrefs={["/parent", "/parent/learning", "/parent/memorisation", "/parent/ihsan"]}>
+              {firstChild && (
+                <OfficeNavLink href="/parent" icon={<User className="size-4" />}>
+                  {firstChild.name.split(" ")[0]}
                 </OfficeNavLink>
-                <OfficeNavLink href="/parent/memorisation" icon={<ClipboardList className="size-4" />}>
-                  Memorisation
-                </OfficeNavLink>
-                <OfficeNavLink href="/parent/ihsan" icon={<Sparkles className="size-4" />}>
-                  Iḥsān Points
-                </OfficeNavLink>
-              </div>
-            </div>
+              )}
+              <OfficeNavLink href="/parent/learning" icon={<BookOpen className="size-4" />}>
+                Learning
+              </OfficeNavLink>
+              <OfficeNavLink href="/parent/memorisation" icon={<ClipboardList className="size-4" />}>
+                Memorisation
+              </OfficeNavLink>
+              <OfficeNavLink href="/parent/ihsan" icon={<Sparkles className="size-4" />}>
+                Iḥsān Points
+              </OfficeNavLink>
+            </NavGroup>
 
-            <div>
-              <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">School</p>
-              <div className="flex flex-col gap-0.5">
-                <OfficeNavLink href="/parent/requests" icon={<ClipboardList className="size-4" />}>
-                  Requests
-                </OfficeNavLink>
-                <OfficeNavLink href="/parent/fees" icon={<Receipt className="size-4" />}>
-                  Fees &amp; documents
-                </OfficeNavLink>
-                <OfficeNavLink href="/parent/messages" icon={<Inbox className="size-4" />}>
-                  Messages &amp; calendar
-                </OfficeNavLink>
-              </div>
-            </div>
+            <NavGroup title="School" hrefs={["/parent/requests", "/parent/fees", "/parent/messages"]}>
+              <OfficeNavLink href="/parent/requests" icon={<ClipboardList className="size-4" />}>
+                Requests
+              </OfficeNavLink>
+              <OfficeNavLink href="/parent/fees" icon={<Receipt className="size-4" />}>
+                Fees &amp; documents
+              </OfficeNavLink>
+              <OfficeNavLink href="/parent/messages" icon={<Inbox className="size-4" />}>
+                Messages &amp; calendar
+              </OfficeNavLink>
+            </NavGroup>
           </nav>
 
           {children_.length > 1 && (

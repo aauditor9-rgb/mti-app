@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { ClipboardCheck, FileSignature, UserCheck } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
+import { NavGroup } from "@/components/shared/nav-group";
 import { getMadrasah } from "@/lib/db/queries";
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
@@ -61,182 +62,162 @@ export default async function OfficeLayout({ children }: { children: React.React
         </div>
 
         <nav className="flex flex-col gap-3">
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Overview
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/" icon={<LayoutDashboard className="size-4" />}>
-                Dashboard
-              </OfficeNavLink>
-              <OfficeNavLink href="/calendar" icon={<Calendar className="size-4" />}>
-                Calendar
-              </OfficeNavLink>
-              <OfficeNavLink href="/tasks" icon={<ListTodo className="size-4" />}>
-                Tasks
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup title="Overview" hrefs={["/", "/calendar", "/tasks"]}>
+            <OfficeNavLink href="/" icon={<LayoutDashboard className="size-4" />}>
+              Dashboard
+            </OfficeNavLink>
+            <OfficeNavLink href="/calendar" icon={<Calendar className="size-4" />}>
+              Calendar
+            </OfficeNavLink>
+            <OfficeNavLink href="/tasks" icon={<ListTodo className="size-4" />}>
+              Tasks
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              People
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/students" icon={<Users className="size-4" />}>
-                Students
-              </OfficeNavLink>
-              <OfficeNavLink href="/classes" icon={<GraduationCap className="size-4" />}>
-                Classes &amp; Allocation
-              </OfficeNavLink>
-              <OfficeNavLink href="/admissions" icon={<ClipboardList className="size-4" />}>
-                Admissions
-              </OfficeNavLink>
-              <OfficeNavLink href="/staff/directory" icon={<Contact className="size-4" />}>
-                Teacher Database
-              </OfficeNavLink>
-              <OfficeNavLink href="/staff/clock" icon={<Clock className="size-4" />}>
-                Clock In/Out
-              </OfficeNavLink>
-              <OfficeNavLink href="/staff/payroll" icon={<Banknote className="size-4" />}>
-                Payroll
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup
+            title="People"
+            hrefs={["/students", "/classes", "/admissions", "/staff/directory", "/staff/clock", "/staff/payroll"]}
+          >
+            <OfficeNavLink href="/students" icon={<Users className="size-4" />}>
+              Students
+            </OfficeNavLink>
+            <OfficeNavLink href="/classes" icon={<GraduationCap className="size-4" />}>
+              Classes &amp; Allocation
+            </OfficeNavLink>
+            <OfficeNavLink href="/admissions" icon={<ClipboardList className="size-4" />}>
+              Admissions
+            </OfficeNavLink>
+            <OfficeNavLink href="/staff/directory" icon={<Contact className="size-4" />}>
+              Teacher Database
+            </OfficeNavLink>
+            <OfficeNavLink href="/staff/clock" icon={<Clock className="size-4" />}>
+              Clock In/Out
+            </OfficeNavLink>
+            <OfficeNavLink href="/staff/payroll" icon={<Banknote className="size-4" />}>
+              Payroll
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Attendance &amp; Behaviour
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/attendance" icon={<CalendarCheck className="size-4" />}>
-                Attendance
-              </OfficeNavLink>
-              <OfficeNavLink href="/attendance/leave-requests" icon={<ClipboardCheck className="size-4" />}>
-                Leave Requests
-              </OfficeNavLink>
-              <OfficeNavLink href="/ihsan" icon={<Sparkles className="size-4" />}>
-                Iḥsān Points
-              </OfficeNavLink>
-              <OfficeNavLink href="/concerns" icon={<HeartHandshake className="size-4" />}>
-                Concerns
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup title="Attendance & Behaviour" hrefs={["/attendance", "/ihsan", "/concerns"]}>
+            <OfficeNavLink href="/attendance" icon={<CalendarCheck className="size-4" />}>
+              Attendance
+            </OfficeNavLink>
+            <OfficeNavLink href="/attendance/leave-requests" icon={<ClipboardCheck className="size-4" />}>
+              Leave Requests
+            </OfficeNavLink>
+            <OfficeNavLink href="/ihsan" icon={<Sparkles className="size-4" />}>
+              Iḥsān Points
+            </OfficeNavLink>
+            <OfficeNavLink href="/concerns" icon={<HeartHandshake className="size-4" />}>
+              Concerns
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Teaching &amp; Learning
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/lesson-plans" icon={<CalendarDays className="size-4" />}>
-                Lesson Plans
-              </OfficeNavLink>
-              <OfficeNavLink href="/homework" icon={<BookOpen className="size-4" />}>
-                Homework
-              </OfficeNavLink>
-              <OfficeNavLink href="/salah" icon={<Moon className="size-4" />}>
-                Ṣalāh &amp; Tarbiyah
-              </OfficeNavLink>
-              <OfficeNavLink href="/progress-trackers/duas" icon={<BookMarked className="size-4" />}>
-                Du&apos;as Tracker
-              </OfficeNavLink>
-              <OfficeNavLink href="/progress-trackers/surahs" icon={<ScrollText className="size-4" />}>
-                Surahs Tracker
-              </OfficeNavLink>
-              <OfficeNavLink href="/progress-trackers/safar-qaaidah" icon={<Layers className="size-4" />}>
-                Safar Qaaidah Tracker
-              </OfficeNavLink>
-              <OfficeNavLink href="/progress-trackers/knowledge-passport" icon={<IdCard className="size-4" />}>
-                Knowledge Passport
-              </OfficeNavLink>
-              <OfficeNavLink href="/hifz" icon={<Moon className="size-4" />}>
-                Hifz Programme
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup
+            title="Teaching & Learning"
+            hrefs={[
+              "/lesson-plans",
+              "/homework",
+              "/salah",
+              "/progress-trackers/duas",
+              "/progress-trackers/surahs",
+              "/progress-trackers/safar-qaaidah",
+              "/progress-trackers/knowledge-passport",
+              "/hifz",
+            ]}
+          >
+            <OfficeNavLink href="/lesson-plans" icon={<CalendarDays className="size-4" />}>
+              Lesson Plans
+            </OfficeNavLink>
+            <OfficeNavLink href="/homework" icon={<BookOpen className="size-4" />}>
+              Homework
+            </OfficeNavLink>
+            <OfficeNavLink href="/salah" icon={<Moon className="size-4" />}>
+              Ṣalāh &amp; Tarbiyah
+            </OfficeNavLink>
+            <OfficeNavLink href="/progress-trackers/duas" icon={<BookMarked className="size-4" />}>
+              Du&apos;as Tracker
+            </OfficeNavLink>
+            <OfficeNavLink href="/progress-trackers/surahs" icon={<ScrollText className="size-4" />}>
+              Surahs Tracker
+            </OfficeNavLink>
+            <OfficeNavLink href="/progress-trackers/safar-qaaidah" icon={<Layers className="size-4" />}>
+              Safar Qaaidah Tracker
+            </OfficeNavLink>
+            <OfficeNavLink href="/progress-trackers/knowledge-passport" icon={<IdCard className="size-4" />}>
+              Knowledge Passport
+            </OfficeNavLink>
+            <OfficeNavLink href="/hifz" icon={<Moon className="size-4" />}>
+              Hifz Programme
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Finance
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/finance/fees" icon={<Receipt className="size-4" />}>
-                Fees
-              </OfficeNavLink>
-              <OfficeNavLink href="/finance/inventory" icon={<Package className="size-4" />}>
-                Books &amp; Inventory
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup title="Finance" hrefs={["/finance/fees", "/finance/inventory"]}>
+            <OfficeNavLink href="/finance/fees" icon={<Receipt className="size-4" />}>
+              Fees
+            </OfficeNavLink>
+            <OfficeNavLink href="/finance/inventory" icon={<Package className="size-4" />}>
+              Books &amp; Inventory
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Communications
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/communications/messages" icon={<Inbox className="size-4" />}>
-                Messages
-              </OfficeNavLink>
-              <OfficeNavLink href="/communications/events" icon={<PartyPopper className="size-4" />}>
-                Events &amp; Jalsas
-              </OfficeNavLink>
-              <OfficeNavLink href="/communications/parents-evening" icon={<UserCheck className="size-4" />}>
-                Parents&apos; Evening
-              </OfficeNavLink>
-              <OfficeNavLink href="/communications/forms" icon={<FileCheck2 className="size-4" />}>
-                Forms &amp; Consent
-              </OfficeNavLink>
-              <OfficeNavLink href="/communications/documents" icon={<FileSignature className="size-4" />}>
-                Documents
-              </OfficeNavLink>
-              <OfficeNavLink href="/communications/complaints" icon={<MessageCircleWarning className="size-4" />}>
-                Complaints
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup
+            title="Communications"
+            hrefs={[
+              "/communications/messages",
+              "/communications/events",
+              "/communications/parents-evening",
+              "/communications/forms",
+              "/communications/documents",
+              "/communications/complaints",
+            ]}
+          >
+            <OfficeNavLink href="/communications/messages" icon={<Inbox className="size-4" />}>
+              Messages
+            </OfficeNavLink>
+            <OfficeNavLink href="/communications/events" icon={<PartyPopper className="size-4" />}>
+              Events &amp; Jalsas
+            </OfficeNavLink>
+            <OfficeNavLink href="/communications/parents-evening" icon={<UserCheck className="size-4" />}>
+              Parents&apos; Evening
+            </OfficeNavLink>
+            <OfficeNavLink href="/communications/forms" icon={<FileCheck2 className="size-4" />}>
+              Forms &amp; Consent
+            </OfficeNavLink>
+            <OfficeNavLink href="/communications/documents" icon={<FileSignature className="size-4" />}>
+              Documents
+            </OfficeNavLink>
+            <OfficeNavLink href="/communications/complaints" icon={<MessageCircleWarning className="size-4" />}>
+              Complaints
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Safeguarding
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/safeguarding/medical" icon={<Stethoscope className="size-4" />}>
-                Medical Register
-              </OfficeNavLink>
-              <OfficeNavLink href="/safeguarding/risk-register" icon={<AlertTriangle className="size-4" />}>
-                Risk Register
-              </OfficeNavLink>
-              <OfficeNavLink href="/safeguarding/policies" icon={<ShieldCheck className="size-4" />}>
-                Policy Acknowledgements
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup title="Safeguarding" hrefs={["/safeguarding/medical", "/safeguarding/risk-register", "/safeguarding/policies"]}>
+            <OfficeNavLink href="/safeguarding/medical" icon={<Stethoscope className="size-4" />}>
+              Medical Register
+            </OfficeNavLink>
+            <OfficeNavLink href="/safeguarding/risk-register" icon={<AlertTriangle className="size-4" />}>
+              Risk Register
+            </OfficeNavLink>
+            <OfficeNavLink href="/safeguarding/policies" icon={<ShieldCheck className="size-4" />}>
+              Policy Acknowledgements
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Settings
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/settings/school" icon={<SettingsIcon className="size-4" />}>
-                School
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup title="Settings" hrefs={["/settings/school"]}>
+            <OfficeNavLink href="/settings/school" icon={<SettingsIcon className="size-4" />}>
+              School
+            </OfficeNavLink>
+          </NavGroup>
 
-          <div>
-            <p className="px-2.5 pb-1 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
-              Reports &amp; Assessment
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <OfficeNavLink href="/reports" icon={<GraduationCap className="size-4" />}>
-                Reports
-              </OfficeNavLink>
-              <OfficeNavLink href="/examinations" icon={<ClipboardList className="size-4" />}>
-                Examinations
-              </OfficeNavLink>
-            </div>
-          </div>
+          <NavGroup title="Reports & Assessment" hrefs={["/reports", "/examinations"]}>
+            <OfficeNavLink href="/reports" icon={<GraduationCap className="size-4" />}>
+              Reports
+            </OfficeNavLink>
+            <OfficeNavLink href="/examinations" icon={<ClipboardList className="size-4" />}>
+              Examinations
+            </OfficeNavLink>
+          </NavGroup>
         </nav>
       </aside>
 
