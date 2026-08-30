@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AddStaffForm } from "@/components/office/add-staff-form";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { expiryStatus, needsAttention } from "@/lib/derive/staff";
 import { getMadrasah, listStaffDirectory } from "@/lib/db/queries";
+import { STAFF_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 const FILTER_TABS = ["All", "Needs attention", "Fully compliant"] as const;
@@ -46,6 +48,7 @@ export default async function TeacherDatabasePage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={STAFF_TABS} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">People · Staff</p>

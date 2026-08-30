@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ReportRow } from "@/components/office/report-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { cn } from "@/lib/utils";
 import { getMadrasah, listReportsForTerm, listTermsForMadrasah } from "@/lib/db/queries";
+import { REPORTS_TABS } from "@/lib/office-hubs";
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ term?: string }> }) {
   const { term: termParam } = await searchParams;
@@ -11,6 +13,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={REPORTS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Reports &amp; Assessment</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Student Reports</h1>

@@ -1,6 +1,8 @@
 import { AddInventoryItemForm } from "@/components/office/add-inventory-item-form";
 import { InventoryRow } from "@/components/office/inventory-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listInventoryItems } from "@/lib/db/queries";
+import { FINANCE_TABS } from "@/lib/office-hubs";
 
 export default async function InventoryPage() {
   const madrasah = await getMadrasah();
@@ -9,6 +11,7 @@ export default async function InventoryPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={FINANCE_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Finance</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Books &amp; Inventory</h1>

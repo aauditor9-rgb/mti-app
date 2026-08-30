@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { ageFromDob } from "@/lib/derive/age";
 import { householdLabel } from "@/lib/derive/household-label";
 import { getMadrasah, listPupils } from "@/lib/db/queries";
+import { STUDENTS_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 const STATUS_TABS = [
@@ -58,6 +60,7 @@ export default async function StudentsPage({
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
+      <HubTabs tabs={STUDENTS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Students</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Student Records</h1>

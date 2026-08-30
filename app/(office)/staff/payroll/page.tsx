@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { PayrollRow } from "@/components/office/payroll-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { todayLondon } from "@/lib/derive/age";
 import { getMadrasah, listPayrollForMonth } from "@/lib/db/queries";
+import { STAFF_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 function monthLabel(month: string) {
@@ -27,6 +29,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={STAFF_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">People · Staff</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Payroll — {monthLabel(month)}</h1>

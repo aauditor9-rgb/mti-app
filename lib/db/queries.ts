@@ -68,7 +68,7 @@ import { todayLondon } from "@/lib/derive/age";
 import { computeAdherence, last7Days } from "@/lib/derive/salah";
 import { computeHouseholdFeeSummary } from "@/lib/derive/fees";
 import { computeTaskStatus } from "@/lib/derive/tasks";
-import { computeClockStatus } from "@/lib/derive/staff";
+import { computeClockStatus, needsAttention } from "@/lib/derive/staff";
 import type { AdmissionYear } from "@/lib/derive/admissions";
 import { getViewerGuardianId, getViewerPupilId, getViewerStaffId } from "@/lib/session";
 
@@ -769,6 +769,106 @@ export async function getCurrentPupilFromCookie(madrasahId: string) {
   return pupils.find((p) => p.id === pupilId) ?? null;
 }
 
+// Teaching Overview (design/Madrassa Portal.dc.html Teaching & Learning "Teaching
+// Overview") — a cross-class snapshot of what's been taught, memorised and still needs a
+// second pass, computed live from the same tables every other screen reads.
+export async function getTeachingOverview(madrasahId: string) {
+  const today = todayLondon();
+  const weekStart = mondayOfDate(today);
+
+  const [plansThisWeek, homeworkRows, hifzToday, terms, draftReports] = await Promise.all([
+    db.query.lessonPlan.findMany({
+      where: and(eq(lessonPlan.madrasahId, madrasahId), eq(lessonPlan.weekStartDate, weekStart)),
+      with: { entries: true },
+    }),
+    db.select().from(homework).where(eq(homework.madrasahId, madrasahId)),
+    db.select().from(hifzRecord).where(and(eq(hifzRecord.madrasahId, madrasahId), eq(hifzRecord.date, today))),
+    listTermsForMadrasah(madrasahId),
+    db.select().from(report).where(and(eq(report.madrasahId, madrasahId), eq(report.status, "Draft"))),
+  ]);
+
+  const plansSubmitted = plansThisWeek.filter((p) => p.entries.length > 0).length;
+  const classesWithHomework = new Set(homeworkRows.map((h) => h.classId)).size;
+  const currentTerm = terms.find((t) => t.startDate <= today && today <= t.endDate) ?? terms[terms.length - 1] ?? null;
+
+  return {
+    plansSubmitted,
+    totalYearBands: LESSON_PLAN_YEARS.length,
+    classesWithHomework,
+    hifzLoggedToday: hifzToday.length,
+    reportsDue: draftReports.length,
+    currentTermName: currentTerm?.name ?? null,
+  };
+}
+
+export async function getAttendanceReportByClass(madrasahId: string, fromDate: string) {
+  const [classes, marks] = await Promise.all([
+    listClasses(madrasahId),
+    db
+      .select()
+      .from(attendanceMark)
+      .where(and(eq(attendanceMark.madrasahId, madrasahId), gte(attendanceMark.date, fromDate))),
+  ]);
+  return classes
+    .filter((c) => c.pupils.length > 0)
+    .map((c) => {
+      const classMarks = marks.filter((m) => m.classId === c.id);
+      const present = classMarks.filter((m) => m.code === "P" || m.code === "L").length;
+      const pct = classMarks.length === 0 ? 0 : Math.round((present / classMarks.length) * 100);
+      return { class: c, markCount: classMarks.length, pct };
+    })
+    .sort((a, b) => a.pct - b.pct);
+}
+
+export async function getBehaviourReport(madrasahId: string) {
+  const concerns = await listConcerns(madrasahId);
+  const byCategory = new Map<string, number>();
+  for (const c of concerns) byCategory.set(c.category, (byCategory.get(c.category) ?? 0) + 1);
+  const bySeverity = { Low: 0, Medium: 0, High: 0 };
+  for (const c of concerns) bySeverity[c.severity] += 1;
+  return {
+    total: concerns.length,
+    open: concerns.filter((c) => c.status === "Open").length,
+    byCategory: [...byCategory.entries()].sort((a, b) => b[1] - a[1]),
+    bySeverity,
+  };
+}
+
+export async function getStaffReport(madrasahId: string) {
+  const staffRows = await listStaffDirectory(madrasahId);
+  return staffRows.map((s) => ({ ...s, needsAttentionFlag: needsAttention(s) }));
+}
+
+export async function listAbsencesInRange(madrasahId: string, fromDate: string) {
+  const [pupils, marks] = await Promise.all([
+    listPupils(madrasahId),
+    db
+      .select()
+      .from(attendanceMark)
+      .where(and(eq(attendanceMark.madrasahId, madrasahId), gte(attendanceMark.date, fromDate))),
+  ]);
+  const pupilById = new Map(pupils.map((p) => [p.id, p]));
+  return marks
+    .filter((m) => m.code !== "P" && m.code !== "L")
+    .map((m) => ({ ...m, pupil: pupilById.get(m.pupilId) ?? null }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export async function listLateArrivalsInRange(madrasahId: string, fromDate: string) {
+  const [pupils, marks] = await Promise.all([
+    listPupils(madrasahId),
+    db
+      .select()
+      .from(attendanceMark)
+      .where(and(eq(attendanceMark.madrasahId, madrasahId), gte(attendanceMark.date, fromDate))),
+  ]);
+  const pupilById = new Map(pupils.map((p) => [p.id, p]));
+  return marks
+    .filter((m) => m.code === "L")
+    .map((m) => ({ ...m, pupil: pupilById.get(m.pupilId) ?? null }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export async function listDocumentsWithSignatureCounts(madrasahId: string) {
   const [docs, guardians] = await Promise.all([
     db.query.signDocument.findMany({
@@ -783,6 +883,31 @@ export async function listDocumentsWithSignatureCounts(madrasahId: string) {
     signedCount: d.signatures.filter((s) => s.signedAt).length,
     totalGuardians: guardians.length,
   }));
+}
+
+// Contact Sheet (design/Madrassa Portal.dc.html People > Students > Contact Sheet) —
+// every guardian, one row per guardian per pupil relationship, for quick emergency
+// lookup. Distinct from Student Records: this is guardian-centric, not pupil-centric.
+export async function listEmergencyContacts(madrasahId: string) {
+  const pupils = await listPupils(madrasahId);
+  const onRoll = pupils.filter((p) => p.enrolmentState === "Enrolled");
+  const links = await db.query.pupilGuardian.findMany({
+    where: eq(pupilGuardian.madrasahId, madrasahId),
+    with: { guardian: true },
+  });
+  const pupilById = new Map(onRoll.map((p) => [p.id, p]));
+
+  const rows = links
+    .map((l) => ({ guardian: l.guardian, pupil: pupilById.get(l.pupilId) })
+    )
+    .filter((r): r is { guardian: typeof links[number]["guardian"]; pupil: (typeof onRoll)[number] } => !!r.pupil)
+    .sort((a, b) => a.guardian.name.localeCompare(b.guardian.name));
+
+  const fatherCount = rows.filter((r) => r.guardian.relation === "Father").length;
+  const motherCount = rows.filter((r) => r.guardian.relation === "Mother").length;
+  const guardianIds = new Set(rows.map((r) => r.guardian.id));
+
+  return { rows, fatherCount, motherCount, totalGuardians: guardianIds.size };
 }
 
 export async function getHouseholdFeeSummaryForPupil(madrasahId: string, pupilId: string) {
@@ -834,6 +959,19 @@ export async function listHifzRecordsForPupil(pupilId: string, limit = 60) {
     orderBy: [desc(hifzRecord.date), desc(hifzRecord.createdAt)],
     limit,
   });
+}
+
+export async function listHolidayRevisionWindows(madrasahId: string) {
+  const classes = await listClasses(madrasahId);
+  const windows = await db.query.holidayRevisionWindow.findMany({
+    where: eq(holidayRevisionWindow.madrasahId, madrasahId),
+    orderBy: desc(holidayRevisionWindow.startDate),
+    with: { days: { with: { completions: true } } },
+  });
+  return classes.map((c) => ({
+    class: c,
+    window: windows.find((w) => w.classId === c.id) ?? null,
+  }));
 }
 
 export async function getHolidayRevisionWindow(madrasahId: string, classId: string) {
@@ -1001,6 +1139,28 @@ export async function getHifzRosterMadrasah(madrasahId: string) {
 export async function listPreHifzPupils(madrasahId: string) {
   const pupils = await listPupils(madrasahId);
   return pupils.filter((p) => p.class?.hifdhType === "Pre-Hifz" && p.enrolmentState === "Enrolled");
+}
+
+// Monthly Tracker (design/Madrassa Portal.dc.html Hifz Programme "Monthly Tracker &
+// Assessments"). The prototype breaks quality into several separate rated dimensions
+// (sabak/dawr/tajwīd/fluency/retention/attendance/home preparation/behaviour) that this
+// schema doesn't capture — hifz_record only has one quality rating per entry — so this
+// aggregates what's real (record counts, average quality, pages progressed) rather than
+// inventing the extra dimensions.
+export async function getHifzMonthlyTracker(madrasahId: string, month: string) {
+  const roster = await getHifzRosterMadrasah(madrasahId);
+  const monthPrefix = month.slice(0, 7);
+  return roster.map(({ pupil, records }) => {
+    const monthRecords = records
+      .filter((r) => r.date.startsWith(monthPrefix))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const qualityScore: Record<string, number> = { Excellent: 4, Strong: 3, Satisfactory: 2, Weak: 1 };
+    const avgScore = monthRecords.length === 0 ? 0 : monthRecords.reduce((s, r) => s + qualityScore[r.quality], 0) / monthRecords.length;
+    const pagesThisMonth = monthRecords
+      .filter((r) => r.type === "Sabaq" && r.pageFrom && r.pageTo)
+      .reduce((sum, r) => sum + (r.pageTo! - r.pageFrom! + 1), 0);
+    return { pupil, records: monthRecords, avgScore, pagesThisMonth };
+  });
 }
 
 export async function listPreHifzAssessments(madrasahId: string) {

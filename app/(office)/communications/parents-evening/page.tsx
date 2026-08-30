@@ -1,5 +1,7 @@
 import { AddSlotForm, CreateSessionForm } from "@/components/office/parents-evening-forms";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listParentsEveningSessions, listStaff } from "@/lib/db/queries";
+import { COMMUNICATIONS_TABS } from "@/lib/office-hubs";
 
 export default async function ParentsEveningPage() {
   const madrasah = await getMadrasah();
@@ -8,6 +10,7 @@ export default async function ParentsEveningPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
+      <HubTabs tabs={COMMUNICATIONS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Communications</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Parents&apos; Evening</h1>

@@ -1,6 +1,8 @@
 import { PolicyCard } from "@/components/office/policy-card";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { expiryStatus } from "@/lib/derive/staff";
 import { getMadrasah, listPolicies } from "@/lib/db/queries";
+import { SAFEGUARDING_TABS } from "@/lib/office-hubs";
 
 export default async function PoliciesPage() {
   const madrasah = await getMadrasah();
@@ -16,6 +18,7 @@ export default async function PoliciesPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={SAFEGUARDING_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Safeguarding</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Policy Acknowledgements</h1>

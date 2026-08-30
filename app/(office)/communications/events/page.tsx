@@ -1,6 +1,8 @@
 import { AddEventForm } from "@/components/office/add-event-form";
 import { EventCard } from "@/components/office/event-card";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listEvents } from "@/lib/db/queries";
+import { COMMUNICATIONS_TABS } from "@/lib/office-hubs";
 
 export default async function EventsPage() {
   const madrasah = await getMadrasah();
@@ -11,6 +13,7 @@ export default async function EventsPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={COMMUNICATIONS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Communications</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Events &amp; Jalsas</h1>

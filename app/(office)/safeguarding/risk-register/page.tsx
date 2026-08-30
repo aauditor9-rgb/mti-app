@@ -1,6 +1,8 @@
 import { AddRiskEntryForm } from "@/components/office/add-risk-entry-form";
 import { RiskEntryRow } from "@/components/office/risk-entry-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listRiskRegisterEntries, listStaff } from "@/lib/db/queries";
+import { SAFEGUARDING_TABS } from "@/lib/office-hubs";
 
 export default async function RiskRegisterPage() {
   const madrasah = await getMadrasah();
@@ -8,6 +10,7 @@ export default async function RiskRegisterPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={SAFEGUARDING_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Safeguarding</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Risk Register</h1>

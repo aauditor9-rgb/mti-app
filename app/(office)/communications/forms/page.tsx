@@ -1,6 +1,8 @@
 import { AddFormTemplateForm } from "@/components/office/add-form-template-form";
 import { FormTemplateCard } from "@/components/office/form-template-card";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getFormTemplateResponses, getMadrasah, listFormTemplates } from "@/lib/db/queries";
+import { COMMUNICATIONS_TABS } from "@/lib/office-hubs";
 
 export default async function FormsPage() {
   const madrasah = await getMadrasah();
@@ -9,6 +11,7 @@ export default async function FormsPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={COMMUNICATIONS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Communications</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Forms &amp; Consent</h1>

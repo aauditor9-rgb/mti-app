@@ -1,7 +1,9 @@
 import { AddComplaintForm } from "@/components/office/add-complaint-form";
 import { ComplaintRow } from "@/components/office/complaint-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { complaintSlaStatus } from "@/lib/derive/complaints";
 import { getMadrasah, listComplaints, listPupils, listStaff } from "@/lib/db/queries";
+import { COMMUNICATIONS_TABS } from "@/lib/office-hubs";
 
 export default async function ComplaintsPage() {
   const madrasah = await getMadrasah();
@@ -13,6 +15,7 @@ export default async function ComplaintsPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={COMMUNICATIONS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Communications</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Complaints</h1>

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { DonutChart } from "@/components/office/donut-chart";
 import { HouseholdFeeCard } from "@/components/office/household-fee-card";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listHouseholdFeeSummaries } from "@/lib/db/queries";
+import { FINANCE_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 const FILTER_TABS = ["All", "Overdue", "Due", "Settled"] as const;
@@ -39,6 +41,7 @@ export default async function FeesPage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={FINANCE_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Finance</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Fees</h1>

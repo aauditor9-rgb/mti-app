@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { todayLondon } from "@/lib/derive/age";
 import { REGISTER_CLOSE_TIME } from "@/lib/derive/attendance";
 import { getMadrasah, listClassesForRegister } from "@/lib/db/queries";
+import { ATTENDANCE_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 export default async function AttendancePage({
@@ -35,6 +37,7 @@ export default async function AttendancePage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={ATTENDANCE_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Attendance</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Today&apos;s Attendance</h1>

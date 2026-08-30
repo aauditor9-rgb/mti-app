@@ -1,5 +1,7 @@
 import { LeaveRequestRow } from "@/components/office/leave-request-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listLeaveRequests } from "@/lib/db/queries";
+import { ATTENDANCE_TABS } from "@/lib/office-hubs";
 
 export default async function LeaveRequestsPage() {
   const madrasah = await getMadrasah();
@@ -8,6 +10,7 @@ export default async function LeaveRequestsPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
+      <HubTabs tabs={ATTENDANCE_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Attendance</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Leave Requests</h1>

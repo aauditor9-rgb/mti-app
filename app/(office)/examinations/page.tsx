@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AddExaminationForm } from "@/components/office/add-examination-form";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listExaminations, listTermsForMadrasah } from "@/lib/db/queries";
+import { EXAMINATIONS_TABS } from "@/lib/office-hubs";
 
 export default async function ExaminationsPage() {
   const madrasah = await getMadrasah();
@@ -8,6 +10,7 @@ export default async function ExaminationsPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={EXAMINATIONS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Reports &amp; Assessment</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Examinations</h1>

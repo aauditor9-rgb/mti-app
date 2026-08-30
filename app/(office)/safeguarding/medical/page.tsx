@@ -1,5 +1,7 @@
 import { AddFirstAidForm } from "@/components/office/add-first-aid-form";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listFirstAidLog, listPupils, listStaff } from "@/lib/db/queries";
+import { SAFEGUARDING_TABS } from "@/lib/office-hubs";
 
 export default async function MedicalRegisterPage() {
   const madrasah = await getMadrasah();
@@ -14,6 +16,7 @@ export default async function MedicalRegisterPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={SAFEGUARDING_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Operations · Safeguarding</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Medical Register</h1>

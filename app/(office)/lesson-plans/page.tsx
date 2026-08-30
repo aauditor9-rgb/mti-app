@@ -1,8 +1,10 @@
 import { LessonPlanWeekPicker } from "@/components/office/lesson-plan-week-picker";
 import { LessonPlanYearRow } from "@/components/office/lesson-plan-year-row";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { todayLondon } from "@/lib/derive/age";
 import { formatWeekLabel, isoWeekInputValue, mondayFromIsoWeekValue, mondayOfDate } from "@/lib/derive/lesson-plans";
 import { getMadrasah, listLessonPlansForWeek, listStaff } from "@/lib/db/queries";
+import { LESSON_PLANS_TABS } from "@/lib/office-hubs";
 
 export default async function LessonPlansPage({
   searchParams,
@@ -23,6 +25,7 @@ export default async function LessonPlansPage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={LESSON_PLANS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Teaching &amp; learning</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Weekly Lesson Plans</h1>
