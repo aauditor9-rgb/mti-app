@@ -11,10 +11,7 @@ import {
   Contact,
   FileCheck2,
   GraduationCap,
-  HeartHandshake,
-  IdCard,
   Inbox,
-  Layers,
   LayoutDashboard,
   ListTodo,
   MessageCircleWarning,
@@ -22,7 +19,6 @@ import {
   Package,
   PartyPopper,
   Receipt,
-  ScrollText,
   Settings as SettingsIcon,
   ShieldCheck,
   Sparkles,
@@ -106,10 +102,7 @@ export default async function OfficeLayout({ children }: { children: React.React
               Leave Requests
             </OfficeNavLink>
             <OfficeNavLink href="/ihsan" icon={<Sparkles className="size-4" />}>
-              Iḥsān Points
-            </OfficeNavLink>
-            <OfficeNavLink href="/concerns" icon={<HeartHandshake className="size-4" />}>
-              Concerns
+              Iḥsān &amp; Concerns
             </OfficeNavLink>
           </NavGroup>
 
@@ -136,16 +129,7 @@ export default async function OfficeLayout({ children }: { children: React.React
               Ṣalāh &amp; Tarbiyah
             </OfficeNavLink>
             <OfficeNavLink href="/progress-trackers/duas" icon={<BookMarked className="size-4" />}>
-              Du&apos;as Tracker
-            </OfficeNavLink>
-            <OfficeNavLink href="/progress-trackers/surahs" icon={<ScrollText className="size-4" />}>
-              Surahs Tracker
-            </OfficeNavLink>
-            <OfficeNavLink href="/progress-trackers/safar-qaaidah" icon={<Layers className="size-4" />}>
-              Safar Qaaidah Tracker
-            </OfficeNavLink>
-            <OfficeNavLink href="/progress-trackers/knowledge-passport" icon={<IdCard className="size-4" />}>
-              Knowledge Passport
+              Progress Trackers
             </OfficeNavLink>
             <OfficeNavLink href="/hifz" icon={<Moon className="size-4" />}>
               Hifz Programme

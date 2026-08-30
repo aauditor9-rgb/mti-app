@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AddSurahForm } from "@/components/office/add-surah-form";
 import { SurahCatalogItem } from "@/components/office/surah-catalog-item";
+import { HubTabs } from "@/components/office/hub-tabs";
 import type { AdmissionYear } from "@/lib/derive/admissions";
 import { computeItemAdherence } from "@/lib/derive/surahs";
 import { getSurahTrackerForYear, getMadrasah } from "@/lib/db/queries";
+import { PROGRESS_TRACKER_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 const SURAH_YEARS: AdmissionYear[] = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6", "Year 7", "Year 8"];
@@ -34,6 +36,7 @@ export default async function SurahsTrackerPage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={PROGRESS_TRACKER_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Teaching &amp; learning · Progress trackers</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Surahs Tracker</h1>

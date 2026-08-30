@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ConcernCard, type ConcernCardData } from "@/components/office/concern-card";
 import { LogConcernForm } from "@/components/office/log-concern-form";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { CONCERN_STATUSES } from "@/lib/derive/concern";
 import { getMadrasah, listConcerns, listPupils, listStaff } from "@/lib/db/queries";
+import { IHSAN_CONCERNS_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 function buildHref(params: Record<string, string | undefined>) {
@@ -46,6 +48,7 @@ export default async function ConcernsPage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={IHSAN_CONCERNS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Tarbiyah</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Concerns</h1>

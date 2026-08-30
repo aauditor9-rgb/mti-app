@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { getMadrasah, listPupils } from "@/lib/db/queries";
+import { PROGRESS_TRACKER_TABS } from "@/lib/office-hubs";
 
 export default async function KnowledgePassportIndexPage() {
   const madrasah = await getMadrasah();
@@ -8,6 +10,7 @@ export default async function KnowledgePassportIndexPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <HubTabs tabs={PROGRESS_TRACKER_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Teaching &amp; learning · Progress trackers</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Islamic Knowledge Passport</h1>

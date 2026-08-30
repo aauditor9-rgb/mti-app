@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AddDuaForm } from "@/components/office/add-dua-form";
 import { DuaCatalogItem } from "@/components/office/dua-catalog-item";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { ADMISSION_YEARS, type AdmissionYear } from "@/lib/derive/admissions";
 import { computeItemAdherence } from "@/lib/derive/duas";
 import { getDuaTrackerForYear, getMadrasah } from "@/lib/db/queries";
+import { PROGRESS_TRACKER_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 function isAdmissionYear(value: string): value is AdmissionYear {
@@ -32,6 +34,7 @@ export default async function DuasTrackerPage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={PROGRESS_TRACKER_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Teaching &amp; learning · Progress trackers</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Du&apos;as Tracker</h1>

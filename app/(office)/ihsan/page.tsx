@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AwardPointsForm } from "@/components/office/award-points-form";
+import { HubTabs } from "@/components/office/hub-tabs";
 import type { IhsanCategory } from "@/lib/derive/ihsan";
 import { getMadrasah, listIhsanAwards, listIhsanTotals } from "@/lib/db/queries";
+import { IHSAN_CONCERNS_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 export default async function IhsanPage() {
@@ -48,6 +50,7 @@ export default async function IhsanPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={IHSAN_CONCERNS_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Behaviour &amp; reward</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Iḥsān Points</h1>

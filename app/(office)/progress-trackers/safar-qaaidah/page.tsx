@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { AddSafarQaaidahItemForm } from "@/components/office/add-safar-qaaidah-item-form";
 import { LevelTestSignoff } from "@/components/office/level-test-signoff";
 import { SafarQaaidahItem } from "@/components/office/safar-qaaidah-item";
+import { HubTabs } from "@/components/office/hub-tabs";
 import { computeItemAdherence, type SafarCriterion } from "@/lib/derive/safar-qaaidah";
 import { getSafarQaaidahTrackerForLevel, getMadrasah } from "@/lib/db/queries";
+import { PROGRESS_TRACKER_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
 const LEVEL_NUMBERS = Array.from({ length: 13 }, (_, i) => i + 1);
@@ -36,6 +38,7 @@ export default async function SafarQaaidahTrackerPage({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <HubTabs tabs={PROGRESS_TRACKER_TABS} />
       <div>
         <p className="text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">Teaching &amp; learning · Progress trackers</p>
         <h1 className="font-heading text-h2 font-medium text-[var(--ink)]">Safar Qaaidah Tracker</h1>
