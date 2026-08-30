@@ -18,11 +18,29 @@ import {
   Users,
 } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
+import { PortalTopbar } from "@/components/shared/portal-topbar";
 import { NavGroup } from "@/components/shared/nav-group";
-import { getMadrasah } from "@/lib/db/queries";
+import { getCurrentStaff, getMadrasah } from "@/lib/db/queries";
+import { signOut } from "@/app/sign-in/actions";
 
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
+  const currentStaff = await getCurrentStaff(madrasah.id);
+
+  if (!currentStaff || currentStaff.role !== "Office Staff") {
+    return (
+      <div className="flex min-h-full flex-1 flex-col bg-background text-foreground">
+        <PortalTopbar onLogOut={signOut} />
+        <div className="flex flex-1 items-center justify-center p-6">
+          <p className="max-w-sm rounded-xl border border-border bg-[var(--surface)] p-6 text-center text-small text-[var(--muted)]">
+            This account isn&apos;t linked to an office staff record. Ask another office
+            member to grant access, or sign in with a different account.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const today = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/London",
     weekday: "long",
@@ -32,7 +50,9 @@ export default async function OfficeLayout({ children }: { children: React.React
   }).format(new Date());
 
   return (
-    <div className="flex min-h-full flex-1 bg-background text-foreground">
+    <div className="flex min-h-full flex-1 flex-col bg-background text-foreground">
+      <PortalTopbar viewerName={currentStaff.name} onLogOut={signOut} />
+      <div className="flex flex-1">
       <aside className="flex w-56 shrink-0 flex-col gap-4 overflow-y-auto border-r border-border bg-[var(--surface)] p-4">
         <div className="flex items-center gap-2 px-1">
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-medium text-primary-foreground">
@@ -139,6 +159,7 @@ export default async function OfficeLayout({ children }: { children: React.React
       </aside>
 
       <main className="flex-1 overflow-x-auto p-6">{children}</main>
+      </div>
     </div>
   );
 }

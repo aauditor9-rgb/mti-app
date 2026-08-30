@@ -14,33 +14,31 @@ import {
 } from "lucide-react";
 import { OfficeNavLink } from "@/components/office/office-nav-link";
 import { PortalTopbar } from "@/components/shared/portal-topbar";
-import { NamePicker } from "@/components/shared/name-picker";
 import { NavGroup } from "@/components/shared/nav-group";
-import { getCurrentStaff, getMadrasah, listPortalStaff } from "@/lib/db/queries";
-import { pickTeacherStaff, logOutTeacher } from "./session-actions";
+import { getCurrentStaff, getMadrasah } from "@/lib/db/queries";
+import { signOut } from "@/app/sign-in/actions";
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
   const currentStaff = await getCurrentStaff(madrasah.id);
 
   if (!currentStaff) {
-    const people = await listPortalStaff(madrasah.id);
     return (
       <div className="flex min-h-full flex-1 flex-col bg-background text-foreground">
-        <PortalTopbar />
-        <NamePicker
-          title="Teacher Portal"
-          subtitle="Who's teaching tonight?"
-          people={people.map((s) => ({ id: s.id, name: s.name, detail: s.title ?? s.role }))}
-          onPick={pickTeacherStaff}
-        />
+        <PortalTopbar onLogOut={signOut} />
+        <div className="flex flex-1 items-center justify-center p-6">
+          <p className="max-w-sm rounded-xl border border-border bg-[var(--surface)] p-6 text-center text-small text-[var(--muted)]">
+            This account isn&apos;t linked to a staff record with portal access. Ask the
+            office to grant access, or sign in with a different account.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background text-foreground">
-      <PortalTopbar viewerName={currentStaff.name} onLogOut={logOutTeacher} />
+      <PortalTopbar viewerName={currentStaff.name} onLogOut={signOut} />
       <div className="flex flex-1">
         <aside className="flex w-56 shrink-0 flex-col gap-4 border-r border-border bg-[var(--surface)] p-4">
           <div className="px-1">

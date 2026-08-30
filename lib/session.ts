@@ -1,13 +1,14 @@
-// Provisional viewer session (design/TECH_STACK.md build order item 1 — "schema + RLS +
-// auth + tenant bootstrap" — isn't built; this is the honest stand-in). A cookie records
-// which staff member or guardian is "signed in", mirroring the prototype's own demo
-// account picker (design/README.md sign-in modal). No password, no verification — anyone
-// can pick any name, exactly like the prototype. Replace with real Supabase Auth
-// sessions when that's built; every call site below is a single choke point for that swap.
+// Viewer identity. Staff/guardian identity is derived from the real Supabase Auth
+// session (see middleware.ts + lib/supabase/*) joined against staff.user_id /
+// guardian.user_id — there is no separate "who's signed in" cookie for them any more.
+// Every call site was already routed through getViewerStaffId()/getViewerGuardianId(),
+// which is what made this swap a one-file change.
 import { cookies } from "next/headers";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { guardian, staff } from "@/lib/db/schema";
+import { createClient } from "@/lib/supabase/server";
 
-const STAFF_COOKIE = "mti_viewer_staff";
-const GUARDIAN_COOKIE = "mti_viewer_guardian";
 const PUPIL_COOKIE = "mti_viewer_pupil";
 const PENDING_PUPIL_COOKIE = "mti_pupil_pending";
 
@@ -18,36 +19,34 @@ const COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 30,
 };
 
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
 export async function getViewerStaffId(): Promise<string | null> {
-  const store = await cookies();
-  return store.get(STAFF_COOKIE)?.value ?? null;
-}
-
-export async function setViewerStaffId(staffId: string) {
-  const store = await cookies();
-  store.set(STAFF_COOKIE, staffId, COOKIE_OPTIONS);
-}
-
-export async function clearViewerStaffId() {
-  const store = await cookies();
-  store.delete(STAFF_COOKIE);
+  const authUserId = await getAuthUserId();
+  if (!authUserId) return null;
+  const [row] = await db.select({ id: staff.id }).from(staff).where(eq(staff.userId, authUserId)).limit(1);
+  return row?.id ?? null;
 }
 
 export async function getViewerGuardianId(): Promise<string | null> {
-  const store = await cookies();
-  return store.get(GUARDIAN_COOKIE)?.value ?? null;
+  const authUserId = await getAuthUserId();
+  if (!authUserId) return null;
+  const [row] = await db.select({ id: guardian.id }).from(guardian).where(eq(guardian.userId, authUserId)).limit(1);
+  return row?.id ?? null;
 }
 
-export async function setViewerGuardianId(guardianId: string) {
+export async function signOutViewer() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   const store = await cookies();
-  store.set(GUARDIAN_COOKIE, guardianId, COOKIE_OPTIONS);
-}
-
-export async function clearViewerGuardianId() {
-  const store = await cookies();
-  store.delete(GUARDIAN_COOKIE);
-  // Handing the device back to a parent also ends the pupil's own sub-session.
   store.delete(PUPIL_COOKIE);
+  store.delete(PENDING_PUPIL_COOKIE);
 }
 
 // The pupil sub-session (design/README.md "Pupil ... reached only by a 4-digit passcode

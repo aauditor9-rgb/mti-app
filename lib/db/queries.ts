@@ -714,17 +714,8 @@ export async function listPayrollForMonth(madrasahId: string, month: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Provisional viewer session (Teacher/Parent/Pupil portals) — see lib/session.ts.
-// No real auth: any staff/guardian with portal access can be "picked" like the
-// prototype's own demo account list.
+// Viewer session (Office/Teacher/Parent/Pupil portals) — see lib/session.ts.
 // ---------------------------------------------------------------------------
-
-export async function listPortalStaff(madrasahId: string) {
-  return db.query.staff.findMany({
-    where: and(eq(staff.madrasahId, madrasahId), eq(staff.portalAccess, true)),
-    orderBy: asc(staff.name),
-  });
-}
 
 export async function getCurrentStaff(madrasahId: string) {
   const staffId = await getViewerStaffId();
