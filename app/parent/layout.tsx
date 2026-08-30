@@ -7,6 +7,8 @@ import { getCurrentGuardian, getMadrasah } from "@/lib/db/queries";
 import { signOut } from "@/app/sign-in/actions";
 import { handToPupil } from "./hand-to-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function ParentLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
   const currentGuardian = await getCurrentGuardian(madrasah.id);

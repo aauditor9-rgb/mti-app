@@ -5,6 +5,8 @@ import { getCurrentPupilFromCookie, getMadrasah } from "@/lib/db/queries";
 import { getPendingPupilId } from "@/lib/session";
 import { backToParent } from "./session-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function PupilLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
   const currentPupil = await getCurrentPupilFromCookie(madrasah.id);

@@ -6,6 +6,10 @@ import { getMadrasah, listIhsanAwards, listIhsanTotals } from "@/lib/db/queries"
 import { IHSAN_CONCERNS_TABS } from "@/lib/office-hubs";
 import { cn } from "@/lib/utils";
 
+// See app/(office)/reports/weekly-review/page.tsx — listIhsanTotals has repeatedly timed
+// out Next's build-time static generation; this page is live per-tenant data anyway.
+export const dynamic = "force-dynamic";
+
 export default async function IhsanPage() {
   const madrasah = await getMadrasah();
   const [totals, awards] = await Promise.all([listIhsanTotals(madrasah.id), listIhsanAwards()]);

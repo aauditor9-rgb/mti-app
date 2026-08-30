@@ -2,6 +2,12 @@ import { HubTabs } from "@/components/office/hub-tabs";
 import { REPORTS_TABS } from "@/lib/office-hubs";
 import { getAttendanceTrend, getMadrasah, listConcerns, listHomework, listIhsanTotals } from "@/lib/db/queries";
 
+// listIhsanTotals recomputes automatic awards from every attendance_mark row in memory
+// on every call, with no caching — cheap at request time but has repeatedly timed out
+// Next's build-time static generation attempt (both locally and on Vercel). This page
+// is per-tenant live data anyway and should never be a cached, build-time snapshot.
+export const dynamic = "force-dynamic";
+
 export default async function WeeklyReviewPage() {
   const madrasah = await getMadrasah();
   const [trend, concerns, homework, ihsanTotals] = await Promise.all([

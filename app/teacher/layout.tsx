@@ -18,6 +18,8 @@ import { NavGroup } from "@/components/shared/nav-group";
 import { getCurrentStaff, getMadrasah } from "@/lib/db/queries";
 import { signOut } from "@/app/sign-in/actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
   const currentStaff = await getCurrentStaff(madrasah.id);

@@ -23,6 +23,12 @@ import { NavGroup } from "@/components/shared/nav-group";
 import { getCurrentStaff, getMadrasah } from "@/lib/db/queries";
 import { signOut } from "@/app/sign-in/actions";
 
+// Every page here reads live, per-tenant data and now also a Supabase Auth session —
+// never build-time-static. Belt and braces alongside cookies() usage below, which
+// already forces this; see app/(office)/reports/weekly-review/page.tsx for the build
+// failures that motivated being explicit about it.
+export const dynamic = "force-dynamic";
+
 export default async function OfficeLayout({ children }: { children: React.ReactNode }) {
   const madrasah = await getMadrasah();
   const currentStaff = await getCurrentStaff(madrasah.id);

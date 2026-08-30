@@ -4,6 +4,10 @@ import { LESSON_PLANS_TABS } from "@/lib/office-hubs";
 import { getMadrasah, listHolidayRevisionWindows } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
+// See app/(office)/reports/weekly-review/page.tsx — this page has intermittently timed
+// out Next's build-time static generation too; it's live per-tenant data anyway.
+export const dynamic = "force-dynamic";
+
 export default async function OfficeHolidayRevisionPage() {
   const madrasah = await getMadrasah();
   const rows = await listHolidayRevisionWindows(madrasah.id);
