@@ -123,7 +123,7 @@ export default async function AdmissionsPage({
           No applicants match this filter.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
           <table className="w-full text-left text-small">
             <thead className="bg-[var(--surface-2)] text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
               <tr>

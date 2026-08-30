@@ -79,7 +79,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
           <p className="font-heading text-h3 font-medium text-[var(--ink)]">
             {tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100)}%
           </p>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+          <div className="mt-1 h-[7px] overflow-hidden rounded-full bg-[var(--surface-2)]">
             <div
               className="h-full rounded-full bg-primary"
               style={{ width: `${tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100)}%` }}
@@ -105,7 +105,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {filtered.length === 0 ? (
           <p className="p-8 text-center text-small text-[var(--muted)]">No tasks in this view.</p>
         ) : (

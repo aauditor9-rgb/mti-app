@@ -109,7 +109,7 @@ async function HolidayRevisionTab({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+    <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
       {window.days.map((d) => {
         const completion = d.completions.find((c) => c.pupilId === pupilId);
         return (

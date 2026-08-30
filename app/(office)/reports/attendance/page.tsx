@@ -23,12 +23,12 @@ export default async function AttendanceReportPage() {
         <p className="text-small text-[var(--muted)]">Last 30 days, by class.</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {rows.map(({ class: c, markCount, pct }) => (
           <div key={c.id} className="flex items-center gap-3 border-t border-border p-3 first:border-t-0 text-small">
             <span className="flex-1 text-[var(--ink)]">{c.name}</span>
             <span className="w-24 text-tiny text-[var(--muted)]">{markCount} marks</span>
-            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[var(--surface-2)]">
+            <div className="h-[7px] w-32 overflow-hidden rounded-full bg-[var(--surface-2)]">
               <div className={cn("h-full rounded-full", pct >= 85 ? "bg-[var(--success)]" : pct >= 70 ? "bg-[var(--warn-bg)]" : "bg-[var(--alert)]")} style={{ width: `${pct}%` }} />
             </div>
             <span className="w-10 text-right font-medium text-[var(--ink)]">{pct}%</span>

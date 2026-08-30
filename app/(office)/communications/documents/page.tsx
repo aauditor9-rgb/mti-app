@@ -25,7 +25,7 @@ export default async function DocumentsPage() {
           No documents published yet.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
           {documents.map((d) => (
             <div key={d.id} className="flex items-center justify-between border-t border-border p-3 first:border-t-0 text-small">
               <div>

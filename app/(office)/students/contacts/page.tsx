@@ -38,7 +38,7 @@ export default async function ContactSheetPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {rows.map(({ guardian, pupil }) => (
           <div key={`${guardian.id}-${pupil.id}`} className="flex items-center gap-3 border-t border-border p-3 first:border-t-0">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-tiny font-medium text-primary-foreground">

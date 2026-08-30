@@ -44,7 +44,7 @@ export default async function TeacherHifzDiaryPage() {
 
       <HifzRecordForm pupils={hifzClass.pupils.map((p) => ({ id: p.id, name: p.name }))} />
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {records.length === 0 ? (
           <p className="p-8 text-center text-small text-[var(--muted)]">No records yet.</p>
         ) : (

@@ -21,7 +21,7 @@ export default async function MarkEntryPage() {
           No examinations set up yet.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
           {examinations.map((e) => (
             <Link key={e.id} href={`/examinations/${e.id}`} className="flex items-center justify-between border-t border-border p-3 first:border-t-0 text-small hover:bg-[var(--surface-2)]">
               <span className="text-[var(--ink)]">{e.title}</span>

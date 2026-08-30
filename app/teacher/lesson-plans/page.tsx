@@ -85,12 +85,12 @@ export default async function TeacherLessonPlansPage({
         <p className="text-small text-[var(--ink-2)]">
           {coveredCount} of {teachingWeeks.length} teaching weeks covered · {pct}%
         </p>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+        <div className="mt-2 h-[7px] overflow-hidden rounded-full bg-[var(--surface-2)]">
           <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {annual.map(({ weekStartDate, plan }, i) => {
           const hasLesson = (plan?.entries.length ?? 0) > 0;
           const breakLabel = YEAR1_BREAK_LABELS[weekStartDate];

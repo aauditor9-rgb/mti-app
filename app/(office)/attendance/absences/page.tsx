@@ -26,7 +26,7 @@ export default async function AbsencesPage() {
         <p className="text-small text-[var(--muted)]">Last 30 days · {unauthorisedCount} unauthorised</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {absences.length === 0 ? (
           <p className="p-8 text-center text-small text-[var(--muted)]">No absences in this window.</p>
         ) : (

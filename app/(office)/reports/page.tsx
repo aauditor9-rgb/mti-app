@@ -51,7 +51,7 @@ async function ReportsList({ madrasahId, termId }: { madrasahId: string; termId:
   const rows = await listReportsForTerm(madrasahId, termId);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+    <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
       {rows.map(({ pupil, report }) => (
         <ReportRow
           key={pupil.id}

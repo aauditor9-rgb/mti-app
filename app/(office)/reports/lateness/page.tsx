@@ -31,7 +31,7 @@ export default async function LatenessReportPage() {
         <p className="text-small text-[var(--muted)]">Last 30 days · {lates.length} late marks across {ranked.length} pupils.</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {ranked.length === 0 ? (
           <p className="p-8 text-center text-small text-[var(--muted)]">No late arrivals in this window.</p>
         ) : (

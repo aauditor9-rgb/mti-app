@@ -54,7 +54,7 @@ export default async function TeacherHomeworkReviewPage() {
                   {item.audience === "Selected students" && " · selected students only"}
                 </p>
                 <div className="mt-3">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+                  <div className="h-[7px] overflow-hidden rounded-full bg-[var(--surface-2)]">
                     <div className={cn("h-full rounded-full", TONE_STYLE[item.progress.tone])} style={{ width: `${item.progress.donePct}%` }} />
                   </div>
                   <p className="mt-1 text-tiny text-[var(--muted)]">

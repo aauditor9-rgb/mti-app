@@ -28,7 +28,7 @@ export function PortalTopbar({
   }
 
   return (
-    <div className="flex items-center justify-end gap-3 border-b border-border bg-[var(--surface)] px-6 py-2.5">
+    <div className="sticky top-0 z-40 flex items-center justify-end gap-3 bg-[rgba(244,241,234,0.86)] px-6 py-2.5 backdrop-blur-md">
       <div className="flex overflow-hidden rounded-lg border border-border">
         {PORTALS.map((p) => (
           <Link

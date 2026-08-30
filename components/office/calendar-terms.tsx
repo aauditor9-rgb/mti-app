@@ -42,7 +42,12 @@ export function CalendarTerms({ calendarSetId, terms }: { calendarSetId: string;
             <div key={t.id} className="flex items-center justify-between rounded-lg bg-[var(--surface-2)] px-3 py-2 text-small">
               <span className="font-medium text-[var(--ink)]">{t.name}</span>
               <span className="text-[var(--muted)]">{t.startDate} – {t.endDate}</span>
-              <button onClick={() => remove(t.id)} disabled={pending} className="text-[var(--muted)] hover:text-[var(--alert)]">
+              <button
+                onClick={() => remove(t.id)}
+                disabled={pending}
+                aria-label={`Delete ${t.name}`}
+                className="text-[var(--muted)] hover:text-[var(--alert)]"
+              >
                 <Trash2 className="size-3.5" />
               </button>
             </div>

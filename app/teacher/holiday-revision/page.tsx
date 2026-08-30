@@ -34,7 +34,7 @@ export default async function TeacherHolidayRevisionPage() {
       <HolidayWindowForm classId={activeClass.id} startDate={window?.startDate} endDate={window?.endDate} />
 
       {window && window.days.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
           {window.days.map((d) => (
             <HolidayRevisionDayRow
               key={d.id}

@@ -22,7 +22,7 @@ export default async function SettingsCalendarsPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {calendarSets.map((c) => (
           <Link key={c.id} href={`/calendar?set=${c.id}`} className="flex items-center justify-between border-t border-border p-3 first:border-t-0 text-small hover:bg-[var(--surface-2)]">
             <span className="text-[var(--ink)]">{c.name}</span>

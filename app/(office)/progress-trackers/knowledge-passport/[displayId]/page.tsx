@@ -13,7 +13,7 @@ function StrandCard({ strand }: { strand: StrandSummary }) {
           <p className="mt-1 font-heading text-h3 font-medium text-[var(--ink)]">
             {strand.completedCount}/{strand.totalCount}
           </p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+          <div className="mt-2 h-[7px] overflow-hidden rounded-full bg-[var(--surface-2)]">
             <div className="h-full rounded-full bg-primary" style={{ width: `${strand.pct}%` }} />
           </div>
           <p className="mt-1 text-tiny text-[var(--muted)]">{strand.pct}% complete</p>

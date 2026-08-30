@@ -51,7 +51,7 @@ export default async function TeacherStudentsPage({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {activeClass.pupils.map((p) => {
           const primaryGuardian = p.household?.guardians[0] ?? null;
           return (

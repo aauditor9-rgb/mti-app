@@ -22,7 +22,7 @@ export default async function LeaveRequestsPage() {
           No requests submitted yet.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
           {requests.map((r) => (
             <LeaveRequestRow
               key={r.id}

@@ -49,7 +49,7 @@ async function MessagesTab({ madrasahId }: { madrasahId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <NewMessageForm />
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {messages.length === 0 ? (
           <p className="p-8 text-center text-small text-[var(--muted)]">No messages yet.</p>
         ) : (

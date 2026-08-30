@@ -21,7 +21,7 @@ export default async function OfficeHolidayRevisionPage() {
         <p className="text-small text-[var(--muted)]">Which classes have a holiday revision window set, across the whole madrasah.</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {rows.map(({ class: c, window }) => {
           const daysWithContent = window?.days.filter((d) => d.quranQaaidah || d.surahMemorisation || d.islamicStudies || d.duas).length ?? 0;
           return (

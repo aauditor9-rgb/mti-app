@@ -72,7 +72,7 @@ export default async function HomeworkPage() {
                 <span className="text-tiny text-[var(--muted)]">Due {h.dueDate}</span>
               </div>
 
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+              <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-[var(--surface-2)]">
                 <div
                   className={cn("h-full rounded-full", TONE_STYLE[h.progress.tone])}
                   style={{ width: `${h.progress.donePct}%` }}

@@ -28,7 +28,7 @@ export default async function TeacherMessagesPage() {
 
       <NewMessageForm />
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {messages.length === 0 ? (
           <p className="p-8 text-center text-small text-[var(--muted)]">No messages yet.</p>
         ) : (

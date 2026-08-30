@@ -62,7 +62,12 @@ export function CalendarHolidays({ calendarSetId, holidays }: { calendarSetId: s
                 <span className={cn("font-medium text-[var(--ink)]", !h.enabled && "text-[var(--muted)] line-through")}>{h.name}</span>
               </label>
               <span className="text-[var(--muted)]">{h.startDate} – {h.endDate}</span>
-              <button onClick={() => remove(h.id)} disabled={pending} className="text-[var(--muted)] hover:text-[var(--alert)]">
+              <button
+                onClick={() => remove(h.id)}
+                disabled={pending}
+                aria-label={`Delete ${h.name}`}
+                className="text-[var(--muted)] hover:text-[var(--alert)]"
+              >
                 <Trash2 className="size-3.5" />
               </button>
             </div>

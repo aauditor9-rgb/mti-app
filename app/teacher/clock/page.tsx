@@ -31,7 +31,7 @@ export default async function TeacherClockPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         <ClockRow
           staffId={staff.id}
           name={staff.name}

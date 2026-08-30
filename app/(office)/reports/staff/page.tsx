@@ -25,7 +25,7 @@ export default async function StaffReportPage() {
         <p className="text-small text-[var(--muted)]">{needsAttentionCount} of {staff.length} staff need attention on compliance.</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         {staff.map((s) => (
           <div key={s.id} className="flex items-center gap-3 border-t border-border p-3 first:border-t-0 text-small">
             <span className="flex-1 text-[var(--ink)]">{s.name}</span>

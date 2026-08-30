@@ -69,7 +69,7 @@ export function HouseholdFeeCard({
   const paidPct = totalInvoiced === 0 ? 0 : Math.min(100, Math.round((totalPaid / totalInvoiced) * 100));
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+    <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="min-w-48">
           <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export function HouseholdFeeCard({
             {pupilNames.join(", ")} · {pupilNames.length === 1 ? "1 child" : `${pupilNames.length} children`}
             {nextDueDate && <> · Next due {nextDueDate}</>}
           </p>
-          <div className="mt-1.5 h-1.5 w-40 overflow-hidden rounded-full bg-[var(--surface-2)]">
+          <div className="mt-1.5 h-[7px] w-40 overflow-hidden rounded-full bg-[var(--surface-2)]">
             <div className={cn("h-full rounded-full", BAR_STYLE[householdStatus])} style={{ width: `${paidPct}%` }} />
           </div>
         </div>

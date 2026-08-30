@@ -19,7 +19,7 @@ export default async function HifzRosterPage() {
       </div>
 
       <HifzRecordForm pupils={roster.map((r) => ({ id: r.pupil.id, name: r.pupil.name }))} action={recordHifzOffice} />
-      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-[var(--surface)] shadow-sm">
         <div className="flex items-center gap-3 bg-[var(--surface-2)] p-3 text-tiny font-medium tracking-wide text-[var(--muted)] uppercase">
           <span className="flex-1">Student</span>
           <span className="w-20 text-right">Juz</span>
