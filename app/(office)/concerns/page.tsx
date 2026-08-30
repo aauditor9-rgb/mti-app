@@ -96,7 +96,7 @@ export default async function ConcernsPage({
           className={cn(
             "rounded-full px-3 py-1 text-small font-medium",
             status === "all"
-              ? "bg-[var(--ink)] text-[var(--surface)]"
+              ? "bg-primary text-primary-foreground"
               : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
           )}
         >
@@ -111,7 +111,7 @@ export default async function ConcernsPage({
               className={cn(
                 "rounded-full px-3 py-1 text-small font-medium",
                 status === s
-                  ? "bg-[var(--ink)] text-[var(--surface)]"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
               )}
             >
@@ -126,7 +126,7 @@ export default async function ConcernsPage({
           href={buildHref({ status: status === "all" ? undefined : status })}
           className={cn(
             "rounded-full px-3 py-1 text-small font-medium",
-            classFilter === "all" ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+            classFilter === "all" ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
           )}
         >
           All classes
@@ -137,7 +137,7 @@ export default async function ConcernsPage({
             href={buildHref({ status: status === "all" ? undefined : status, class: name })}
             className={cn(
               "rounded-full px-3 py-1 text-small font-medium",
-              classFilter === name ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+              classFilter === name ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
             )}
           >
             {name}

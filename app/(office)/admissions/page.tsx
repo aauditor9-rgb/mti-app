@@ -70,7 +70,7 @@ export default async function AdmissionsPage({
           href={buildHref({ band: band === "all" ? undefined : band })}
           className={cn(
             "rounded-full px-3 py-1 text-small font-medium",
-            stage === "all" ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+            stage === "all" ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
           )}
         >
           All ({applicants.length})
@@ -83,7 +83,7 @@ export default async function AdmissionsPage({
               href={buildHref({ stage: s, band: band === "all" ? undefined : band })}
               className={cn(
                 "rounded-full px-3 py-1 text-small font-medium",
-                stage === s ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+                stage === s ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
               )}
             >
               {s} ({count})
@@ -97,7 +97,7 @@ export default async function AdmissionsPage({
           href={buildHref({ stage: stage === "all" ? undefined : stage })}
           className={cn(
             "rounded-full px-3 py-1 text-small font-medium",
-            band === "all" ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+            band === "all" ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
           )}
         >
           All priority
@@ -108,7 +108,7 @@ export default async function AdmissionsPage({
             href={buildHref({ stage: stage === "all" ? undefined : stage, band: b })}
             className={cn(
               "rounded-full px-3 py-1 text-small font-medium",
-              band === b ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+              band === b ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
             )}
           >
             {b}

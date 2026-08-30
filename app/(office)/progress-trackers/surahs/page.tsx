@@ -67,7 +67,7 @@ export default async function SurahsTrackerPage({
             href={`/progress-trackers/surahs?year=${encodeURIComponent(y)}`}
             className={cn(
               "rounded-full px-3 py-1 text-small font-medium",
-              y === year ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+              y === year ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
             )}
           >
             {y}

@@ -32,7 +32,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                 href={`/reports?term=${t.id}`}
                 className={cn(
                   "rounded-full px-3 py-1 text-small font-medium",
-                  activeTerm?.id === t.id ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
+                  activeTerm?.id === t.id ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
                 )}
               >
                 {t.name}

@@ -42,7 +42,7 @@ export default async function PupilHifzPage() {
           <p className="text-small text-[var(--muted)]">Pages memorised</p>
         </div>
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
-          <p className="font-heading text-h3 font-medium text-[var(--ink)]">{summary.streakDays} 🔥</p>
+          <p className="font-heading text-h3 font-medium text-[var(--ink)]">{summary.streakDays}</p>
           <p className="text-small text-[var(--muted)]">Day prep streak</p>
         </div>
       </div>

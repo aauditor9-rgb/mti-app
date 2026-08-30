@@ -35,7 +35,7 @@ export default async function HifzRosterPage() {
               </span>
               <span className="w-20 text-right text-[var(--ink-2)]">{summary.currentJuz ?? "—"}</span>
               <span className="w-28 text-right text-[var(--ink-2)]">{summary.pagesMemorised}</span>
-              <span className="w-24 text-right text-[var(--ink-2)]">{summary.streakDays} 🔥</span>
+              <span className="w-24 text-right text-[var(--ink-2)]">{summary.streakDays}</span>
             </div>
           );
         })}

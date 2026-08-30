@@ -137,7 +137,7 @@ export function ConcernCard({ concern, staff }: { concern: ConcernCardData; staf
               className={cn(
                 "rounded-full border px-2.5 py-1 text-tiny font-medium disabled:cursor-not-allowed",
                 concern.severity === s
-                  ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--surface)]"
+                  ? "border-[var(--ink)] bg-primary text-primary-foreground"
                   : "border-border bg-background text-[var(--ink-2)] hover:bg-[var(--surface-2)]",
               )}
             >

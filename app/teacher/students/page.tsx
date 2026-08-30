@@ -42,7 +42,7 @@ export default async function TeacherStudentsPage({
               href={`/teacher/students?classId=${c.id}`}
               className={cn(
                 "rounded-full px-3 py-1 text-small font-medium",
-                c.id === activeClass.id ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
+                c.id === activeClass.id ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
               )}
             >
               {c.name}

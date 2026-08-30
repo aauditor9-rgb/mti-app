@@ -78,7 +78,7 @@ export default async function FeesPage({
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={buildHref(status, "All")}
-            className={cn("rounded-full px-3 py-1 text-small font-medium", rawClass === "All" ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border")}
+            className={cn("rounded-full px-3 py-1 text-small font-medium", rawClass === "All" ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border")}
           >
             All classes
           </Link>
@@ -86,7 +86,7 @@ export default async function FeesPage({
             <Link
               key={c}
               href={buildHref(status, c)}
-              className={cn("rounded-full px-3 py-1 text-small font-medium", rawClass === c ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border")}
+              className={cn("rounded-full px-3 py-1 text-small font-medium", rawClass === c ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border")}
             >
               {c}
             </Link>
@@ -101,7 +101,7 @@ export default async function FeesPage({
             href={buildHref(f, rawClass)}
             className={cn(
               "rounded-full px-3 py-1 text-small font-medium",
-              status === f ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+              status === f ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
             )}
           >
             {f} ({f === "All" ? households.length : f === "Overdue" ? overdueCount : f === "Due" ? dueCount : settledCount})

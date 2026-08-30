@@ -1,3 +1,4 @@
+import { Phone } from "lucide-react";
 import { HubTabs } from "@/components/office/hub-tabs";
 import { STUDENTS_TABS } from "@/lib/office-hubs";
 import { getMadrasah, listEmergencyContacts } from "@/lib/db/queries";
@@ -50,7 +51,12 @@ export default async function ContactSheetPage() {
               </p>
             </div>
             <div className="shrink-0 text-right text-tiny text-[var(--ink-2)]">
-              {guardian.phone && <p>☎ {guardian.phone}</p>}
+              {guardian.phone && (
+                <p className="flex items-center justify-end gap-1">
+                  <Phone className="size-3" aria-hidden="true" />
+                  {guardian.phone}
+                </p>
+              )}
               {guardian.email && <p>{guardian.email}</p>}
             </div>
           </div>

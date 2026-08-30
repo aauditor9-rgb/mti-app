@@ -128,7 +128,7 @@ function Header({ year, view }: { year: string; view: string }) {
           href="/teacher/lesson-plans?view=annual"
           className={cn(
             "rounded-full px-3 py-1 text-small font-medium",
-            view !== "weekly" ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
+            view !== "weekly" ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
           )}
         >
           Annual overview
@@ -137,7 +137,7 @@ function Header({ year, view }: { year: string; view: string }) {
           href="/teacher/lesson-plans?view=weekly"
           className={cn(
             "rounded-full px-3 py-1 text-small font-medium",
-            view === "weekly" ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
+            view === "weekly" ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
           )}
         >
           Weekly plan

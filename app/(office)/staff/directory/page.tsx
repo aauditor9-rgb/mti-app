@@ -1,3 +1,4 @@
+import { Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import { AddStaffForm } from "@/components/office/add-staff-form";
 import { HubTabs } from "@/components/office/hub-tabs";
@@ -75,7 +76,7 @@ export default async function TeacherDatabasePage({
             href={buildHref(f, q)}
             className={cn(
               "rounded-full px-3 py-1 text-small font-medium",
-              filter === f ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+              filter === f ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
             )}
           >
             {f} ({f === "All" ? withCompliance.length : f === "Needs attention" ? needsAttentionCount : compliantCount})
@@ -106,8 +107,18 @@ export default async function TeacherDatabasePage({
               </div>
 
               <div className="mt-2 flex flex-col gap-0.5 text-small text-[var(--ink-2)]">
-                {s.email && <p>✉ {s.email}</p>}
-                {s.phone && <p>☎ {s.phone}</p>}
+                {s.email && (
+                  <p className="flex items-center gap-1">
+                    <Mail className="size-3" aria-hidden="true" />
+                    {s.email}
+                  </p>
+                )}
+                {s.phone && (
+                  <p className="flex items-center gap-1">
+                    <Phone className="size-3" aria-hidden="true" />
+                    {s.phone}
+                  </p>
+                )}
                 <p>
                   Portal access:{" "}
                   <span className={cn("font-medium", s.portalAccess ? "text-[var(--success)]" : "text-[var(--muted)]")}>

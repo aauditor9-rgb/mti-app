@@ -39,7 +39,7 @@ export default async function ParentMemorisationPage({
               href={`/parent/memorisation?tab=${t}${child ? `&child=${child}` : ""}`}
               className={cn(
                 "rounded-full px-3 py-1 text-small font-medium",
-                tab === t ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
+                tab === t ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)]",
               )}
             >
               {t === "journey" ? "Journey" : t === "hifz" ? "Hifz Dashboard" : "Tonight's Prep"}
@@ -138,7 +138,7 @@ async function HifzDashboardTab({ pupilId }: { pupilId: string }) {
         <p className="text-small text-[var(--muted)]">Pages memorised</p>
       </div>
       <div className="rounded-xl border border-border bg-[var(--surface)] p-4">
-        <p className="font-heading text-h3 font-medium text-[var(--ink)]">{summary.streakDays} 🔥</p>
+        <p className="font-heading text-h3 font-medium text-[var(--ink)]">{summary.streakDays}</p>
         <p className="text-small text-[var(--muted)]">Day prep streak</p>
       </div>
     </div>

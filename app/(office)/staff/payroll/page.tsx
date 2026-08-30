@@ -45,7 +45,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
             href={`/staff/payroll?month=${m}`}
             className={cn(
               "rounded-full px-3 py-1 text-small font-medium",
-              m === month ? "bg-[var(--ink)] text-[var(--surface)]" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
+              m === month ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-[var(--ink-2)] hover:bg-border",
             )}
           >
             {monthLabel(m)}
