@@ -356,6 +356,7 @@ Parent, Pupil. Editable in Settings → Permissions.
 | `MTI Home v2.dc.html` | Public marketing site / sign-in entry. |
 | `PARITY.md` | Portal ↔ app parity audit. **Read this** — it lists the shared data contract and every defect already found and fixed, including the traps to avoid re-introducing. |
 | `START_HERE.md` | Reading order and a first prompt for Claude Code. |
+| `DESIGN_SYSTEM.md` | **The UI/UX spec.** Tokens, component recipes, layout, motion, voice, a11y, and the do-not list. Read before building any screen. |
 | `STEP_BY_STEP.md` | Non-technical, stage-by-stage guide for a non-engineer building this with Claude Code. |
 | `TECH_STACK.md` | Recommended stack, accounts to sign up for, multi-tenancy, safeguarding, build order. |
 | `support.js` | Prototype runtime only. **Do not port.** |

@@ -7,7 +7,11 @@ set of HTML design prototypes.
 
 1. **`README.md`** — the design spec. Tokens, every screen, interactions, data model,
    state, permissions, and eight invariants that were real defects. Self-sufficient.
-2. **`TECH_STACK.md`** — recommended stack, accounts to sign up for, multi-tenancy and
+2. **`DESIGN_SYSTEM.md`** — the UI/UX spec. Tokens, exact component recipes, layout
+   anatomy, motion, voice, accessibility, and a do-not list. **Read this before building
+   any screen, and re-read it whenever the design starts drifting.** Implement the tokens
+   as CSS custom properties first and never hard-code a colour or size in a component.
+3. **`TECH_STACK.md`** — recommended stack, accounts to sign up for, multi-tenancy and
    safeguarding rules, build order, repo shape.
 3. **`PARITY.md`** — portal ↔ mobile app data contract and the defect log. Read before
    touching anything that shows a number twice.
